@@ -141,28 +141,33 @@ No manual configuration changes needed unless you have specific requirements.
 
 Biome is used instead of ESLint/Prettier for faster, unified linting and formatting.
 
-**Install and configure:**
+**Install and initialize:**
 
 ```bash
-# Install Biome and nx integration
-npm install --save-dev @biomejs/biome @nx/biome
+# Install Biome
+npm install --save-dev @biomejs/biome
 
-# Generate Biome configuration
-npx nx g @nx/biome:configuration
+# Initialize Biome configuration
+npx @biomejs/biome init
 ```
 
-This creates `biome.json` with:
-- Unified formatting (2 spaces, double quotes, semicolons)
-- Import organization
-- Linting with recommended rules
-- Biome targets added to all packages
+This creates a basic `biome.json` at the repository root.
 
-**Recommended `biome.json` settings:**
+**Customize `biome.json`:**
+
+Modify the generated configuration (keep the schema version that was generated):
 
 ```json
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": { "enabled": true },
+  "$schema": "https://biomejs.dev/schemas/2.3.7/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": false
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -180,10 +185,80 @@ This creates `biome.json` with:
     "enabled": true,
     "rules": {
       "recommended": true,
-      "suspicious": { "noExplicitAny": "warn" }
+      "suspicious": {
+        "noExplicitAny": "warn"
+      }
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
     }
   }
 }
+```
+
+**Note:** The schema version will match your installed Biome version. The example shows 2.3.7, but use whatever version `biome init` generates.
+
+**Add npm scripts to root `package.json`:**
+
+```json
+{
+  "scripts": {
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write ."
+  }
+}
+```
+
+**Add caching to `nx.json`:**
+
+Update `targetDefaults` section:
+
+```json
+{
+  "targetDefaults": {
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/biome.json",
+        { "externalDependencies": ["@biomejs/biome"] }
+      ]
+    },
+    "format": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/biome.json",
+        { "externalDependencies": ["@biomejs/biome"] }
+      ]
+    },
+    "check": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/biome.json",
+        { "externalDependencies": ["@biomejs/biome"] }
+      ]
+    }
+  }
+}
+```
+
+Now you can run:
+```bash
+npm run lint       # Lint all files
+npm run format     # Format all files
+npm run check      # Lint and format (combined)
+nx run-many -t lint  # Lint with nx caching
 ```
 
 ---
