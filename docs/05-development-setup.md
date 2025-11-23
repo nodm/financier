@@ -123,48 +123,46 @@ mkdir docs samples
 
 ## Configuration Files
 
-### TypeScript Configuration
+### Note on Configuration
 
-**Root `tsconfig.base.json`**:
+After running `nx g @nx/js:library`, nx automatically configures:
+- `tsconfig.base.json` with strict TypeScript settings
+- `tsconfig.json` with project references
+- `nx.json` with TypeScript plugin and release configuration
 
-```json
-{
-  "compilerOptions": {
-    "target": "ES2023",
-    "module": "ESNext",
-    "lib": ["ES2023"],
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@nodm/financier-types": ["packages/types/src/index.ts"],
-      "@nodm/financier-db": ["packages/db/src/index.ts"],
-      "@nodm/financier-importer": ["packages/importer/src/index.ts"],
-      "@nodm/financier-mcp-server": ["packages/mcp-server/src/index.ts"]
-    }
-  },
-  "exclude": ["node_modules", "dist"]
-}
+The generated configuration uses modern defaults:
+- **TypeScript**: ES2022 target, nodenext module resolution, composite builds
+- **Strict mode**: All strict checks enabled plus additional safety checks
+- **Project references**: Automatic dependency tracking via TypeScript composite mode
+
+No manual configuration changes needed unless you have specific requirements.
+
+### Set Up Biome (Linting/Formatting)
+
+Biome is used instead of ESLint/Prettier for faster, unified linting and formatting.
+
+**Install and configure:**
+
+```bash
+# Install Biome and nx integration
+npm install --save-dev @biomejs/biome @nx/biome
+
+# Generate Biome configuration
+npx nx g @nx/biome:configuration
 ```
 
-### Biome Configuration
+This creates `biome.json` with:
+- Unified formatting (2 spaces, double quotes, semicolons)
+- Import organization
+- Linting with recommended rules
+- Biome targets added to all packages
 
-**`biome.json`** (root level):
+**Recommended `biome.json` settings:**
 
 ```json
 {
   "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "organizeImports": { "enabled": true },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -175,274 +173,72 @@ mkdir docs samples
     "formatter": {
       "semicolons": "always",
       "quoteStyle": "double",
-      "trailingCommas": "es5",
-      "bracketSameLine": false
+      "trailingCommas": "es5"
     }
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
-      "suspicious": {
-        "noExplicitAny": "warn"
-      }
+      "suspicious": { "noExplicitAny": "warn" }
     }
   }
 }
 ```
 
-### nx Configuration
+---
 
-**`nx.json`**:
+## Package Configuration
 
-```json
-{
-  "targetDefaults": {
-    "build": {
-      "cache": true,
-      "dependsOn": ["^build"]
-    },
-    "test": {
-      "cache": true
-    },
-    "lint": {
-      "cache": true
-    },
-    "check": {
-      "cache": true
-    },
-    "format": {
-      "cache": true
-    }
-  },
-  "tasksRunnerOptions": {
-    "default": {
-      "runner": "nx/tasks-runners/default"
-    }
-  }
-}
-```
+### Note on Package Structure
 
-### 4. Set Up Biome with nx
+Nx generates base package files automatically. The generated `package.json` files:
+- Are minimal with only `tslib` dependency
+- Have version 0.0.1
+- Include proper ESM configuration (`"type": "module"`)
+- Have correct exports and build configuration
 
+**Additional dependencies** (zod, prisma, commander, etc.) will be added during Phase 1-7 implementation as each package is developed.
+
+### Package-Specific Dependencies
+
+When implementing each phase, add these dependencies:
+
+**@nodm/financier-types** (Phase 1):
 ```bash
-# Install Biome and nx integration
-npm install --save-dev @biomejs/biome @nx/biome
-
-# Initialize Biome configuration for nx
-npx nx g @nx/biome:configuration
+cd packages/types
+npm install zod
 ```
 
-This will:
-
-- Create `biome.json` at the root (if not already created)
-- Add Biome targets to all packages
-- Configure nx caching for Biome operations
-
-**Note**: If you already created `biome.json` manually in step 3, the generator will use it.
-
----
-
-## Package Setup
-
-### Package 1: @nodm/financier-types
-
-**`packages/types/package.json`**:
-
-```json
-{
-  "name": "@nodm/financier-types",
-  "version": "0.1.0",
-  "description": "Shared TypeScript types and Zod schemas for The Financier",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "type-check": "tsc --noEmit"
-  },
-  "dependencies": {
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
-  }
-}
+**@nodm/financier-config** (Phase 1.5):
+```bash
+cd packages/config
+npm install zod
+npm install --workspace=@nodm/financier-types
 ```
 
-**`packages/types/tsconfig.json`**:
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
+**@nodm/financier-db** (Phase 2):
+```bash
+cd packages/db
+npm install @prisma/client
+npm install --save-dev prisma
+npm install --workspace=@nodm/financier-types
 ```
 
----
-
-### Package 2: @nodm/financier-db
-
-**`packages/db/package.json`**:
-
-```json
-{
-  "name": "@nodm/financier-db",
-  "version": "0.1.0",
-  "description": "Database layer for The Financier",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "scripts": {
-    "build": "prisma generate && tsc",
-    "test": "jest",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio",
-    "prisma:generate": "prisma generate"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.7.0",
-    "@nodm/financier-types": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "prisma": "^5.7.0",
-    "typescript": "^5.3.3"
-  }
-}
+**@nodm/financier-importer** (Phase 3-5):
+```bash
+cd packages/importer
+npm install commander papaparse
+npm install --save-dev @types/papaparse tsx
+npm install --workspace=@nodm/financier-db --workspace=@nodm/financier-config --workspace=@nodm/financier-types
 ```
 
-**`packages/db/tsconfig.json`**:
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
----
-
-### Package 3: @nodm/financier-importer
-
-**`packages/importer/package.json`**:
-
-```json
-{
-  "name": "@nodm/financier-importer",
-  "version": "0.1.0",
-  "description": "CLI tool for importing bank statements",
-  "type": "module",
-  "main": "./dist/index.js",
-  "bin": {
-    "financier": "./dist/index.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@nodm/financier-db": "workspace:*",
-    "@nodm/financier-types": "workspace:*",
-    "commander": "^11.1.0",
-    "papaparse": "^5.4.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/papaparse": "^5.3.14",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
-  }
-}
-```
-
-**`packages/importer/tsconfig.json`**:
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
-}
-```
-
----
-
-### Package 4: @nodm/financier-mcp-server
-
-**`packages/mcp-server/package.json`**:
-
-```json
-{
-  "name": "@nodm/financier-mcp-server",
-  "version": "0.1.0",
-  "description": "MCP server for accessing financial data",
-  "type": "module",
-  "main": "./dist/index.js",
-  "bin": {
-    "financier-mcp-server": "./dist/index.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@nodm/financier-db": "workspace:*",
-    "@nodm/financier-types": "workspace:*",
-    "@modelcontextprotocol/sdk": "^0.5.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
-  }
-}
-```
-
-**`packages/mcp-server/tsconfig.json`**:
-
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests"]
-}
+**@nodm/financier-mcp-server** (Phase 6-7):
+```bash
+cd packages/mcp-server
+npm install @modelcontextprotocol/sdk
+npm install --save-dev tsx
+npm install --workspace=@nodm/financier-db --workspace=@nodm/financier-config --workspace=@nodm/financier-types
 ```
 
 ---
