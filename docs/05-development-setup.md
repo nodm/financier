@@ -30,8 +30,8 @@
 
 ```bash
 # Create project directory
-mkdir the-financier
-cd the-financier
+mkdir financier
+cd financier
 
 # Initialize git
 git init
@@ -90,11 +90,11 @@ EOF
 npm install -g nx
 
 # Create nx workspace
-npx create-nx-workspace@latest the-financier \
+npx create-nx-workspace@latest financier \
   --preset=ts \
   --nx-cloud=false
 
-cd the-financier
+cd financier
 ```
 
 **Configuration prompts:**
