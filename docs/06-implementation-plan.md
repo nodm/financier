@@ -91,6 +91,48 @@ nx test types
 
 ---
 
+### Phase 1.5: Configuration Package
+
+**Goal**: Create centralized configuration management
+
+**Priority**: HIGH
+
+**Tasks**:
+
+1. **Create package structure**
+   - `packages/config/`
+
+2. **Implement configuration loader**
+   - `src/index.ts`
+   - Use `zod` for validation
+   - Load from `~/.financier/config.json`
+   - Provide default values
+
+3. **Write tests**
+   - Test default values
+   - Test file loading
+   - Test validation
+
+**Files to create**:
+
+```
+packages/config/src/
+├── index.ts
+├── schema.ts
+└── defaults.ts
+```
+
+**Verification**:
+
+```bash
+nx build config
+nx test config
+```
+
+**Depends on**: Phase 1 (types)
+
+---
+
 ### Phase 2: Database Package
 
 **Goal**: Set up Prisma, define schema, create database utilities
@@ -101,8 +143,8 @@ nx test types
 
 1. **Create Prisma schema**
 
-   - Define `Account` model (fields TBD, but structure decided)
-   - Define `Transaction` model (fields TBD, but structure decided)
+   - Define `Account` model (UUID id, hash, mask)
+   - Define `Transaction` model (UUID id, accountId FK)
    - Add indexes and constraints
    - Configure SQLite datasource
 
@@ -615,7 +657,8 @@ npm publish --dry-run
 
 1. Phase 0: Project Setup
 2. Phase 1: Types Package
-3. Phase 2: Database Package
+3. Phase 1.5: Configuration Package
+4. Phase 2: Database Package
 4. Phase 3: Importer Infrastructure
 5. Phase 4: Bank Parsers (BLOCKED - awaiting CSV samples)
 6. Phase 5: Importer Logic

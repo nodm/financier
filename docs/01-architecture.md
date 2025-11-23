@@ -391,28 +391,44 @@ const db = getDatabaseClient();
 
 ## Configuration
 
-### User Configuration File
+### Configuration Module
+
+**Package**: `@nodm/financier-config` (New)
+
+**Purpose**: Centralized configuration management for all tools.
 
 **Location**: `~/.financier/config.json`
 
-**Initial structure** (future enhancement):
-```json
-{
-  "database": {
-    "path": "~/.financier/data.db"
-  },
-  "importer": {
-    "defaultCurrency": "EUR",
-    "duplicateHandling": "skip"
-  },
-  "mcpServer": {
-    "port": 3000,
-    "logLevel": "info"
-  }
+**Features**:
+- Loads configuration from JSON file
+- Provides default values
+- Validates config using Zod schemas
+- Type-safe configuration access
+
+**Structure**:
+```typescript
+interface FinancierConfig {
+  database: {
+    url: string; // Default: "file:~/.financier/data.db"
+  };
+  importer: {
+    defaultCurrency: string; // Default: "EUR"
+    duplicateHandling: 'skip' | 'error'; // Default: "skip"
+  };
+  mcpServer: {
+    port: number; // Default: 3000
+    logLevel: 'error' | 'warn' | 'info' | 'debug'; // Default: "info"
+  };
 }
 ```
 
-Currently: No configuration file, use hardcoded defaults.
+**Usage**:
+```typescript
+import { getConfig } from '@nodm/financier-config';
+
+const config = await getConfig();
+console.log(config.database.url);
+```
 
 ## Performance Considerations
 
