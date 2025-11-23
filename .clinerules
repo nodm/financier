@@ -1,0 +1,387 @@
+# The Financier - Project Rules for AI Assistants
+
+## Project Overview
+
+The Financier is a personal finance management system with:
+- Monorepo structure using nx
+- Node.js + TypeScript (ES2023)
+- SQLite database with Prisma ORM
+- MCP server for LLM integration
+- CLI tool for importing bank statements
+
+## Code Style & Conventions
+
+### TypeScript Preferences
+
+1. **Use function declarations** over arrow functions for top-level functions:
+   ```typescript
+   // ✅ Preferred
+   function parseTransaction(data: unknown) { }
+   
+   // ❌ Avoid
+   const parseTransaction = (data: unknown) => { }
+   ```
+
+2. **Leverage type inference** - don't add return types unless necessary:
+   ```typescript
+   // ✅ Preferred
+   function getAccount(id: string) {
+     return db.account.findUnique({ where: { id } });
+   }
+   
+   // ❌ Avoid unnecessary annotations
+   function getAccount(id: string): Promise<Account | null> { }
+   ```
+
+3. **Use descriptive type names** (no one-letter names):
+   ```typescript
+   // ✅ Preferred
+   type TransactionType = 'debit' | 'credit';
+   type AccountList = Array<Account>;
+   
+   // ❌ Avoid
+   type T = 'debit' | 'credit';
+   type List = Account[];
+   ```
+
+4. **Use Array<T> generic over bracket syntax**:
+   ```typescript
+   // ✅ Preferred
+   Array<Transaction>
+   
+   // ❌ Avoid
+   Transaction[]
+   ```
+
+5. **Prefer native APIs** over external dependencies:
+   ```typescript
+   // ✅ Preferred
+   await fetch(url)
+   
+   // ❌ Avoid
+   await axios.get(url)
+   ```
+
+### Formatting & Linting
+
+- Use **Biome** for both linting and formatting (not ESLint/Prettier)
+- Configuration in `biome.json`:
+  - Semicolons: always
+  - Quotes: double
+  - Trailing commas: ES5
+  - Indent: 2 spaces
+  - Line width: 80
+
+### Module System
+
+- Use **native ECMAScript modules** (ESM)
+- All packages have `"type": "module"` in package.json
+- Use `.js` extensions in imports (TypeScript ESM requirement)
+
+## Git Conventions
+
+### Commit Messages
+
+**CRITICAL: Always use Conventional Commits format**
+
+Format: `<type>(<scope>): <description>`
+
+Types:
+- `feat` - New feature
+- `fix` - Bug fix
+- `docs` - Documentation changes
+- `refactor` - Code refactoring
+- `test` - Adding/updating tests
+- `chore` - Maintenance tasks
+- `perf` - Performance improvements
+
+Scopes (use package names):
+- `types` - @nodm/financier-types
+- `db` - @nodm/financier-db
+- `importer` - @nodm/financier-importer
+- `mcp-server` - @nodm/financier-mcp-server
+- `root` - Root-level changes
+
+Examples:
+```bash
+feat(importer): add Bank1 CSV parser
+fix(db): correct duplicate detection logic
+docs(root): update architecture diagrams
+refactor(types): simplify transaction schema
+test(mcp-server): add query tool integration tests
+chore(root): update dependencies
+```
+
+### Branch Naming
+
+- Feature: `feature/bank1-parser`
+- Fix: `fix/duplicate-detection`
+- Release: `release/v0.1.0`
+
+## Documentation
+
+### Location
+
+All technical documentation is in `/docs`:
+- `00-project-overview.md` - High-level project vision
+- `01-architecture.md` - Technical architecture
+- `02-database-schema.md` - Database design
+- `03-mcp-server-specification.md` - MCP tools specification
+- `04-importer-specification.md` - Importer CLI specification
+- `05-development-setup.md` - Setup guide
+- `06-implementation-plan.md` - Step-by-step implementation
+
+### When to Update
+
+Update documentation when:
+- Architecture changes
+- New features added
+- API changes
+- Schema modifications
+- Setup requirements change
+
+## Testing
+
+### Framework
+
+- **Jest** for all testing
+- Test files: `*.test.ts`
+- Coverage target: >80% for critical paths
+
+### Test Structure
+
+Use **Arrange-Act-Assert** pattern:
+
+```typescript
+describe('Bank1Parser', () => {
+  it('should detect Bank1 format from headers', () => {
+    // Arrange
+    const headers = ['Operacijos data', 'Suma'];
+    const parser = new Bank1Parser();
+    
+    // Act
+    const result = parser.canParse(headers);
+    
+    // Assert
+    expect(result).toBe(true);
+  });
+});
+```
+
+### Test Categories
+
+1. **Unit tests**: Individual functions/classes
+2. **Integration tests**: Database operations, full workflows
+3. **E2E tests**: CLI commands, MCP tools
+
+### Test Database
+
+- Use separate test database: `test.db`
+- Clean up in `afterEach` or `afterAll`
+- Never use production database in tests
+
+## Package Management
+
+### Workspace Protocol
+
+Use `workspace:*` for internal dependencies:
+
+```json
+{
+  "dependencies": {
+    "@nodm/financier-types": "workspace:*",
+    "@nodm/financier-db": "workspace:*"
+  }
+}
+```
+
+### Build Order
+
+Always build in dependency order:
+1. types
+2. db (depends on types)
+3. importer (depends on db, types)
+4. mcp-server (depends on db, types)
+
+Use: `nx run-many --target=build --all` (nx handles order automatically)
+
+## Database
+
+### Prisma Conventions
+
+1. **Model names**: PascalCase, singular (e.g., `Transaction`, `Account`)
+2. **Field names**: camelCase (e.g., `accountId`, `createdAt`)
+3. **Table names**: snake_case via `@@map` (e.g., `@@map("transactions")`)
+4. **Always use `@updatedAt`** for tracking changes
+5. **Use UUIDs** for generated IDs: `@default(uuid())`
+
+### Migration Strategy
+
+- Use descriptive migration names: `prisma migrate dev --name add_categories_table`
+- Never edit migrations manually after creation
+- Always test migrations on test database first
+
+## Error Handling
+
+### Custom Error Classes
+
+All packages have custom errors extending `FinancierError`:
+
+```typescript
+// Base error in @nodm/financier-types
+export class FinancierError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = this.constructor.name;
+  }
+}
+
+// Package-specific errors
+export class ImportError extends FinancierError {}
+export class ValidationError extends FinancierError {}
+```
+
+### Error Messages
+
+- Be specific and actionable
+- Include context (what failed, why, how to fix)
+- Don't expose sensitive data in error messages
+
+Example:
+```typescript
+// ✅ Good
+throw new ValidationError(
+  'Invalid transaction amount: must be non-zero. Got: 0'
+);
+
+// ❌ Bad
+throw new Error('Invalid amount');
+```
+
+## Implementation Guidelines
+
+### Phase-Based Development
+
+Follow the implementation plan in `docs/06-implementation-plan.md`:
+
+1. Phase 0: Project setup
+2. Phase 1: Types package
+3. Phase 2: Database package
+4. Phase 3: Importer infrastructure
+5. Phase 4: Bank parsers (awaiting CSV samples)
+6. Phase 5: Importer logic
+7. Phase 6: MCP core
+8. Phase 7: MCP tools
+9. Phase 8: Integration testing
+
+**Never skip phases** - each builds on previous phases.
+
+### Before Implementation
+
+1. Read relevant documentation in `/docs`
+2. Understand dependencies and order
+3. Check if required CSV samples are available (for bank parsers)
+4. Ensure previous phases are complete
+
+### Code Review Checklist
+
+Before committing:
+- [ ] Code follows style conventions
+- [ ] Tests written and passing
+- [ ] Biome check passes (`nx check <package> -- --write`)
+- [ ] TypeScript compiles (`nx build <package>`)
+- [ ] Documentation updated if needed
+- [ ] Conventional commit message prepared
+
+## Special Considerations
+
+### Bank Parsers (Phase 4)
+
+**BLOCKED until user provides 4 CSV samples**
+
+Each bank needs:
+1. Anonymized CSV sample in `samples/`
+2. Header pattern analysis
+3. Custom parser implementation
+4. Field mapping logic
+5. Tests with fixtures
+
+Do not proceed with Phase 4 without CSV samples.
+
+### Security
+
+- Never log sensitive data (account numbers, amounts, personal info)
+- Database file at `~/.financier/data.db` - relies on OS permissions
+- No encryption in v1 (local-only use case)
+- MCP server is read-only in v1
+
+### Performance
+
+- Batch database operations (1000 records per batch)
+- Use Prisma indexes for common queries
+- Paginate large result sets
+- Consider caching for statistics queries
+
+## Communication Style
+
+When working with the user (Dima):
+- Be casual but professional
+- Assume expert-level knowledge (experienced web developer)
+- Give answers immediately, explain after if needed
+- Anticipate needs and suggest improvements
+- Treat as an expert, not a beginner
+- No moral lectures or safety warnings unless critical
+
+## Current Project Status
+
+- **Phase**: 0 (Documentation complete, ready for setup)
+- **Blockers**: Phase 4 needs CSV samples from 4 banks
+- **Next Action**: Project initialization (create repo, setup nx, install deps)
+- **Tech Stack**: Node.js, TypeScript (ES2023), nx, Prisma, SQLite, Zod, Biome
+- **Publishing**: All 4 packages will be published to npm under `@nodm` scope
+
+## Quick Reference
+
+### Common Commands
+
+```bash
+# Build all packages
+nx run-many --target=build --all
+
+# Test all packages
+nx run-many --target=test --all
+
+# Lint and format all packages
+nx run-many --target=check --all -- --write
+
+# Build specific package with dependencies
+nx build importer --with-deps
+
+# Run affected tasks only
+nx affected --target=check
+nx affected --target=test
+
+# Database operations
+cd packages/db
+npx prisma migrate dev
+npx prisma studio
+npx prisma generate
+```
+
+### File Locations
+
+- Database: `~/.financier/data.db`
+- Prisma schema: `packages/db/prisma/schema.prisma`
+- Documentation: `docs/*.md`
+- Test fixtures: `packages/*/tests/fixtures/`
+- CSV samples: `samples/*.csv` (to be provided)
+
+## Notes for AI Assistants
+
+- Always read relevant documentation before implementing
+- Follow the implementation plan phases sequentially
+- Use conventional commits for all changes
+- Respect the user's TypeScript and formatting preferences
+- When blocked (e.g., CSV samples), clearly communicate and continue with unblocked work
+- Update documentation when making architectural changes
+- Test thoroughly - this handles financial data
