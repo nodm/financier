@@ -90,33 +90,33 @@ EOF
 npm install -g nx
 
 # Create nx workspace
+cd financier
+
 npx create-nx-workspace@latest financier \
   --preset=ts \
   --nx-cloud=false
-
-cd financier
+  --directory=.
 ```
 
 **Configuration prompts:**
+
 - Package manager: npm
 - Create applications: No (we'll create packages manually)
 - Distributed caching: No (for now)
 
-### 3. Project Structure
+### 3. Generate Packages
 
 ```bash
-# Create package directories
-mkdir -p packages/types/src
-mkdir -p packages/db/src packages/db/prisma
-mkdir -p packages/importer/src packages/importer/tests
-mkdir -p packages/mcp-server/src packages/mcp-server/tests
+# Generate packages using nx
+nx g @nx/js:library types --directory=packages/types --buildable --publishable --importPath=@nodm/financier-types
+nx g @nx/js:library config --directory=packages/config --buildable --publishable --importPath=@nodm/financier-config
+nx g @nx/js:library db --directory=packages/db --buildable --publishable --importPath=@nodm/financier-db
+nx g @nx/js:library importer --directory=packages/importer --buildable --publishable --importPath=@nodm/financier-importer
+nx g @nx/js:library mcp-server --directory=packages/mcp-server --buildable --publishable --importPath=@nodm/financier-mcp-server
 
-# Create docs and samples directories
+# Create additional directories
+mkdir -p packages/db/prisma
 mkdir docs samples
-
-# Create root configuration files
-touch .clinerules
-touch biome.json
 ```
 
 ---
@@ -234,6 +234,7 @@ npx nx g @nx/biome:configuration
 ```
 
 This will:
+
 - Create `biome.json` at the root (if not already created)
 - Add Biome targets to all packages
 - Configure nx caching for Biome operations
@@ -555,7 +556,7 @@ nx run-many --target=check --all -- --write
 # Just format (no linting)
 nx run-many --target=format --all
 
-# Just lint (no formatting)  
+# Just lint (no formatting)
 nx run-many --target=lint --all
 
 # Check only affected packages
@@ -655,6 +656,7 @@ npm link
 **Issue**: `Cannot find module '@nodm/financier-types'`
 
 **Solution**: Build dependencies first
+
 ```bash
 nx build types
 nx build db
@@ -663,6 +665,7 @@ nx build db
 **Issue**: Prisma client not generated
 
 **Solution**: Run Prisma generate
+
 ```bash
 cd packages/db
 npx prisma generate
@@ -671,6 +674,7 @@ npx prisma generate
 **Issue**: TypeScript errors in imports
 
 **Solution**: Check tsconfig.json paths and rebuild
+
 ```bash
 nx run-many --target=build --all
 ```
@@ -707,11 +711,7 @@ nx run-many --target=build --all
 
 ```json
 {
-  "recommendations": [
-    "biomejs.biome",
-    "prisma.prisma",
-    "github.copilot"
-  ]
+  "recommendations": ["biomejs.biome", "prisma.prisma", "github.copilot"]
 }
 ```
 

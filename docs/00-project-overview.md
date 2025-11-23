@@ -29,6 +29,7 @@ The Financier is a personal finance management system designed to provide AI-pow
 financier/
 ├── packages/
 │   ├── types/           # @nodm/financier-types
+│   ├── config/          # @nodm/financier-config
 │   ├── db/              # @nodm/financier-db
 │   ├── importer/        # @nodm/financier-importer
 │   └── mcp-server/      # @nodm/financier-mcp-server
