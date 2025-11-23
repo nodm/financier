@@ -1,3 +1,3 @@
 export function mcpServer(): string {
-  return 'mcp-server';
+  return "mcp-server";
 }

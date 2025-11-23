@@ -2,7 +2,11 @@
   "name": "@financier/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "check": "biome check --write ."
+  },
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "^2.3.7",

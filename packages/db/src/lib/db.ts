@@ -1,3 +1,3 @@
 export function db(): string {
-  return 'db';
+  return "db";
 }
