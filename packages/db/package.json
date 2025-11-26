@@ -18,7 +18,18 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "postinstall": "prisma generate"
+  },
   "dependencies": {
+    "@prisma/client": "^7.0.1",
     "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.0.1"
   }
 }

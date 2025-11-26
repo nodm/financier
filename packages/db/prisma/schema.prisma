@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Account {
+  id             String   @id // IBAN (user-provided)
+  name           String
+  openDate       DateTime?
+  openingBalance Decimal?
+  currentBalance Decimal?
+  currency       String
+  bankCode       String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  transactions     Transaction[] @relation("AccountTransactions")
+  counterpartyTxns Transaction[] @relation("CounterpartyTransactions")
+
+  @@index([bankCode])
+  @@map("accounts")
+}
+
+model Transaction {
+  id                    String   @id @default(uuid())
+  accountId             String
+  counterpartyAccountId String?
+  date                  DateTime
+  amount                Decimal
+  currency              String
+  originalAmount        Decimal?
+  originalCurrency      String?
+  merchant              String?
+  description           String
+  category              String?
+  type                  String
+  balance               Decimal?
+  externalId            String?
+  source                String
+  importedAt            DateTime @default(now())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  account             Account  @relation("AccountTransactions", fields: [accountId], references: [id])
+  counterpartyAccount Account? @relation("CounterpartyTransactions", fields: [counterpartyAccountId], references: [id])
+
+  @@unique([accountId, date, externalId])
+  @@index([accountId])
+  @@index([counterpartyAccountId])
+  @@index([accountId, date])
+  @@index([date])
+  @@index([merchant])
+  @@index([category])
+  @@map("transactions")
+}

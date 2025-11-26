@@ -29,7 +29,6 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 **Fields**:
 
 - `id` (String, Primary Key) - IBAN (required, user-provided for all accounts)
-- `mask` (String) - Last 4 digits of account number (e.g., "0001")
 - `name` (String) - User-friendly account name (required, manually set)
 - `openDate` (DateTime, Optional) - When account was opened (manually set)
 - `openingBalance` (Decimal, Optional) - Initial account balance (manually set)
@@ -54,7 +53,7 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 - `id` contains the actual IBAN (not hashed)
 - IBAN is required for all accounts, even cards/Revolut (user must provide)
 - Database is local (~/.financier/data.db), privacy via OS permissions
-- `mask` is used for UI display to quickly identify accounts
+- Last 4 digits (mask) calculated from `id` for UI display (e.g., `id.slice(-4)`)
 - Account metadata (name, openDate, openingBalance) must be manually set by user
 - One account = one currency. Multi-currency transactions stored with original amount/currency fields
 
@@ -150,17 +149,16 @@ datasource db {
 }
 
 model Account {
-  id             String        @id  // IBAN (user-provided)
-  mask           String
+  id             String   @id // IBAN (user-provided)
   name           String
   openDate       DateTime?
   openingBalance Decimal?
   currentBalance Decimal?
   currency       String
   bankCode       String
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   transactions     Transaction[] @relation("AccountTransactions")
   counterpartyTxns Transaction[] @relation("CounterpartyTransactions")
