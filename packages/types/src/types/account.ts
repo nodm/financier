@@ -1,20 +1,33 @@
+import type { BankCode } from "./bank.js";
 import type { Currency } from "./currency.js";
 
 /**
  * Account information
  */
 export interface Account {
-  /** Unique account identifier (UUID) */
+  /** Unique account identifier (IBAN) */
   id: string;
 
-  /** SHA-256 hash of account number */
-  hash: string;
+  /** Account name/description */
+  name: string;
 
-  /** Masked account number (last 4 digits) */
-  mask: string;
+  /** Account opening date */
+  openDate: Date | null;
+
+  /** Opening balance */
+  openingBalance: number | null;
+
+  /** Current balance */
+  currentBalance: number | null;
 
   /** Account currency */
   currency: Currency;
+
+  /** Bank code */
+  bankCode: BankCode;
+
+  /** Account active status */
+  isActive: boolean;
 
   /** Account creation timestamp */
   createdAt: Date;

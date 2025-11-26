@@ -25,32 +25,50 @@ export interface Transaction {
   /** Unique transaction identifier (UUID) */
   id: string;
 
-  /** Associated account ID */
+  /** Associated account ID (IBAN) */
   accountId: string;
 
-  /** External transaction ID from bank (for deduplication) */
-  externalId: string;
+  /** Counterparty account ID for internal transfers (IBAN) */
+  counterpartyAccountId: string | null;
 
   /** Transaction date */
   date: Date;
 
-  /** Transaction amount (always positive, type determines direction) */
+  /** Transaction amount (can be positive or negative) */
   amount: number;
 
   /** Transaction currency */
   currency: Currency;
 
-  /** Account balance after transaction (optional) */
-  balance: number | null;
+  /** Original amount before currency conversion */
+  originalAmount: number | null;
+
+  /** Original currency before conversion */
+  originalCurrency: string | null;
+
+  /** Merchant or payee name */
+  merchant: TransactionMerchant;
+
+  /** Transaction description */
+  description: string;
+
+  /** Transaction category */
+  category: TransactionCategory;
 
   /** Transaction type (debit/credit) */
   type: TransactionType;
 
-  /** Merchant or transaction description */
-  merchant: TransactionMerchant;
+  /** Account balance after transaction (optional) */
+  balance: number | null;
 
-  /** Transaction category */
-  category: TransactionCategory;
+  /** External transaction ID from bank (for deduplication) */
+  externalId: string | null;
+
+  /** Transaction source (bank code or import source) */
+  source: string;
+
+  /** Import timestamp */
+  importedAt: Date;
 
   /** Transaction creation timestamp */
   createdAt: Date;

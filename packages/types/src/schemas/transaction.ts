@@ -7,15 +7,21 @@ import { TransactionType } from "../types/transaction.js";
  */
 export const transactionSchema = z.object({
   id: z.string().uuid(),
-  accountId: z.string().uuid(),
-  externalId: z.string().min(1),
+  accountId: z.string().min(1), // IBAN
+  counterpartyAccountId: z.string().min(1).nullable(),
   date: z.date(),
-  amount: z.number().positive(),
+  amount: z.number(),
   currency: z.nativeEnum(Currency),
-  balance: z.number().nullable(),
-  type: z.nativeEnum(TransactionType),
+  originalAmount: z.number().nullable(),
+  originalCurrency: z.string().nullable(),
   merchant: z.string().nullable(),
+  description: z.string(),
   category: z.string().nullable(),
+  type: z.nativeEnum(TransactionType),
+  balance: z.number().nullable(),
+  externalId: z.string().nullable(),
+  source: z.string(),
+  importedAt: z.date(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -39,22 +45,28 @@ export const rawTransactionDataSchema = z.object({
  * Transaction creation input schema
  */
 export const createTransactionSchema = z.object({
-  accountId: z.string().uuid(),
-  externalId: z.string().min(1),
+  accountId: z.string().min(1), // IBAN
+  counterpartyAccountId: z.string().min(1).nullable(),
   date: z.date(),
-  amount: z.number().positive(),
+  amount: z.number(),
   currency: z.nativeEnum(Currency),
-  balance: z.number().nullable(),
-  type: z.nativeEnum(TransactionType),
+  originalAmount: z.number().nullable(),
+  originalCurrency: z.string().nullable(),
   merchant: z.string().nullable(),
+  description: z.string(),
   category: z.string().nullable(),
+  type: z.nativeEnum(TransactionType),
+  balance: z.number().nullable(),
+  externalId: z.string().nullable(),
+  source: z.string(),
 });
 
 /**
  * Transaction query filters schema
  */
 export const transactionFiltersSchema = z.object({
-  accountId: z.string().uuid().optional(),
+  accountId: z.string().min(1).optional(), // IBAN
+  counterpartyAccountId: z.string().min(1).optional(), // IBAN
   startDate: z.date().optional(),
   endDate: z.date().optional(),
   minAmount: z.number().optional(),
@@ -62,6 +74,7 @@ export const transactionFiltersSchema = z.object({
   type: z.nativeEnum(TransactionType).optional(),
   merchant: z.string().optional(),
   category: z.string().optional(),
+  source: z.string().optional(),
   limit: z.number().int().positive().max(1000).default(100),
   offset: z.number().int().nonnegative().default(0),
 });

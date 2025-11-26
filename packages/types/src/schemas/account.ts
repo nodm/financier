@@ -1,30 +1,44 @@
 import { z } from "zod";
 import { Currency } from "../types/currency.js";
+import { BankCode } from "../types/bank.js";
 
 /**
  * Account schema for validation
  */
 export const accountSchema = z.object({
-  id: z.string().uuid(),
-  hash: z.string().length(64), // SHA-256 produces 64 hex characters
-  mask: z.string().length(4),
+  id: z.string().min(1), // IBAN
+  name: z.string().min(1),
+  openDate: z.date().nullable(),
+  openingBalance: z.number().nullable(),
+  currentBalance: z.number().nullable(),
   currency: z.nativeEnum(Currency),
+  bankCode: z.nativeEnum(BankCode),
+  isActive: z.boolean(),
   createdAt: z.date(),
   updatedAt: z.date(),
-});
-
-/**
- * Raw account data schema
- */
-export const rawAccountDataSchema = z.object({
-  accountNumber: z.string().min(1),
-  currency: z.nativeEnum(Currency),
 });
 
 /**
  * Account creation input schema
  */
 export const createAccountSchema = z.object({
-  accountNumber: z.string().min(1),
+  id: z.string().min(1), // IBAN (user-provided)
+  name: z.string().min(1),
+  openDate: z.date().nullable().optional(),
+  openingBalance: z.number().nullable().optional(),
+  currentBalance: z.number().nullable().optional(),
   currency: z.nativeEnum(Currency),
+  bankCode: z.nativeEnum(BankCode),
+  isActive: z.boolean().default(true),
+});
+
+/**
+ * Account update input schema
+ */
+export const updateAccountSchema = z.object({
+  name: z.string().min(1).optional(),
+  openDate: z.date().nullable().optional(),
+  openingBalance: z.number().nullable().optional(),
+  currentBalance: z.number().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
