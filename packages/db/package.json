@@ -26,10 +26,13 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.0.1",
     "@prisma/client": "^7.0.1",
+    "better-sqlite3": "^12.4.6",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "prisma": "^7.0.1"
   }
 }
