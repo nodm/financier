@@ -1,1 +1,5 @@
-export * from "./lib/importer.js";
+#!/usr/bin/env node
+
+import { run } from "./cli.js";
+
+run();

@@ -1,0 +1,34 @@
+import { readFileSync } from "node:fs";
+import { UnsupportedBankError } from "../errors/index.js";
+import type { BaseParser } from "./base-parser.js";
+import { SebLtParser } from "./seb-lt-parser.js";
+
+const PARSERS: Array<BaseParser> = [new SebLtParser()];
+
+export async function getParser(filePath: string): Promise<BaseParser> {
+  // Read file to detect format - different parsers may have different detection strategies
+  const content = readFileSync(filePath, "utf-8");
+  const firstLines = content.split("\n").slice(0, 10);
+
+  // Check each parser
+  for (const parser of PARSERS) {
+    // For SEB, check if file has the characteristic header pattern
+    if (parser.bankCode === "SEB") {
+      const hasSebPattern = firstLines.some(
+        (line) =>
+          line.includes("SĄSKAITOS") &&
+          line.includes("IŠRAŠAS") &&
+          firstLines.some(
+            (l) => l.includes("DOK NR.") && l.includes("DEBETAS/KREDITAS")
+          )
+      );
+      if (hasSebPattern) {
+        return parser;
+      }
+    }
+  }
+
+  throw new UnsupportedBankError(
+    `No parser found for file: ${filePath}. Unable to detect bank format.`
+  );
+}
