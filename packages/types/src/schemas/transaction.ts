@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { Currency } from "../types/currency.js";
-import { TransactionType } from "../types/transaction.js";
+import { z } from 'zod';
+import { Currency } from '../types/currency.js';
+import { TransactionType } from '../types/transaction.js';
 
 /**
  * Transaction schema for validation
@@ -35,6 +35,7 @@ export const rawTransactionDataSchema = z.object({
   currency: z.union([z.nativeEnum(Currency), z.string()]),
   balance: z.union([z.number(), z.string(), z.null()]).optional(),
   merchant: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
   externalId: z.string().min(1),
   typeIndicator: z.string().optional(),

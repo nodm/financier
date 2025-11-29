@@ -32,6 +32,7 @@ const HEADER_MAPPINGS = {
   'TRANSAKCIJOS TIPAS': 'category',
   'DEBETAS/KREDITAS': 'typeIndicator',
   'SĄSKAITOS NR': 'accountNumber',
+  'MOKĖJIMO PASKIRTIS': 'description',
   // English -> normalized key
   // Note: "INSTRUCTION ID" is the batch/clearing ID (e.g., CLR3887432), not unique per transaction
   // "TRANSACTION CODE" contains the unique transaction reference (e.g., RO726122757)
@@ -45,6 +46,7 @@ const HEADER_MAPPINGS = {
   'TRANSACTION TYPE': 'category',
   'DEBIT/CREDIT': 'typeIndicator',
   'ACCOUNT NO': 'accountNumber',
+  'DETAILS OF PAYMENTS': 'description',
 } as const;
 
 // Account separator patterns
@@ -251,6 +253,11 @@ export class SebLtParser extends BaseParser {
       amount: typeIndicator === 'D' ? -Math.abs(amount) : Math.abs(amount),
       currency: (row.currency || row['SĄSKAITOS VALIUTA'] || 'EUR') as Currency,
       merchant: row.merchant || row['MOKĖTOJO ARBA GAVĖJO PAVADINIMAS'] || null,
+      description:
+        row.description ||
+        row['MOKĖJIMO PASKIRTIS'] ||
+        row['DETAILS OF PAYMENTS'] ||
+        null,
       category: row.category || row['TRANSAKCIJOS TIPAS'] || null,
       typeIndicator,
       accountNumber: accountId,

@@ -1,8 +1,8 @@
-import crypto from "node:crypto";
-import { getDatabaseClient, type PrismaClient } from "@nodm/financier-db";
-import { type ImportResult, TransactionType } from "@nodm/financier-types";
-import { getParser } from "../parsers/parser-factory.js";
-import { filterDuplicates } from "./duplicate-detector.js";
+import crypto from 'node:crypto';
+import { getDatabaseClient, type PrismaClient } from '@nodm/financier-db';
+import { type ImportResult, TransactionType } from '@nodm/financier-types';
+import { getParser } from '../parsers/parser-factory.js';
+import { filterDuplicates } from './duplicate-detector.js';
 
 export interface ImportOptions {
   dryRun?: boolean;
@@ -34,8 +34,9 @@ export async function importCSV(
   }
 
   // Parse CSV
-  const { accountId: parsedAccountId, transactions } =
-    await parser.parse(filePath);
+  const { accountId: parsedAccountId, transactions } = await parser.parse(
+    filePath
+  );
   const accountId = overrideAccountId || parsedAccountId;
 
   if (verbose) {
@@ -80,7 +81,9 @@ export async function importCSV(
     if (verbose) {
       console.log(`[INFO] Found ${duplicates} duplicates`);
       console.log(
-        `[INFO] ${dryRun ? "Would import" : "Importing"} ${newTransactions.length} new transactions`
+        `[INFO] ${dryRun ? 'Would import' : 'Importing'} ${
+          newTransactions.length
+        } new transactions`
       );
     }
 
@@ -106,7 +109,7 @@ export async function importCSV(
       await prisma.transaction.createMany({
         data: newTransactions.map((t) => {
           const amount =
-            typeof t.amount === "string"
+            typeof t.amount === 'string'
               ? Number.parseFloat(t.amount)
               : t.amount;
           const type =
@@ -119,17 +122,17 @@ export async function importCSV(
             accountId: targetAccountId,
             counterpartyAccountId: null,
             externalId: t.externalId,
-            date: typeof t.date === "string" ? new Date(t.date) : t.date,
+            date: typeof t.date === 'string' ? new Date(t.date) : t.date,
             amount,
-            currency: typeof t.currency === "string" ? t.currency : t.currency,
+            currency: typeof t.currency === 'string' ? t.currency : t.currency,
             originalAmount: null,
             originalCurrency: null,
             merchant: t.merchant || null,
-            description: "",
+            description: t.description || '',
             category: t.category || null,
             type,
             balance: t.balance
-              ? typeof t.balance === "string"
+              ? typeof t.balance === 'string'
                 ? Number.parseFloat(t.balance)
                 : t.balance
               : null,
@@ -170,7 +173,7 @@ async function ensureAccount(
       data: {
         id: accountId,
         name: `Account ${accountId.slice(-4)}`,
-        currency: "EUR",
+        currency: 'EUR',
         bankCode,
       },
     });

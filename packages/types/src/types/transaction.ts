@@ -1,11 +1,11 @@
-import type { Currency } from "./currency.js";
+import type { Currency } from './currency.js';
 
 /**
  * Transaction type
  */
 export enum TransactionType {
-  DEBIT = "DEBIT",
-  CREDIT = "CREDIT",
+  DEBIT = 'DEBIT',
+  CREDIT = 'CREDIT',
 }
 
 /**
@@ -95,6 +95,9 @@ export interface RawTransactionData {
 
   /** Merchant/description */
   merchant?: string | null;
+
+  /** Transaction description/payment purpose */
+  description?: string | null;
 
   /** Category (optional) */
   category?: string | null;

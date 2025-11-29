@@ -54,6 +54,26 @@ describe('SebLtParser', () => {
       });
     });
 
+    it('should parse description field from MOKĖJIMO PASKIRTIS', async () => {
+      const csvContent = `"SĄSKAITOS  (LT123456789012345678) IŠRAŠAS (UŽ LAIKOTARPĮ: 2025-01-01-2025-01-31)";
+"DOK NR.";"DATA";"VALIUTA";"SUMA";"MOKĖTOJO ARBA GAVĖJO PAVADINIMAS";"MOKĖTOJO ARBA GAVĖJO IDENTIFIKACINIS KODAS";"SĄSKAITA";"KREDITO ĮSTAIGOS PAVADINIMAS";"KREDITO ĮSTAIGOS SWIFT KODAS";"MOKĖJIMO PASKIRTIS";"TRANSAKCIJOS KODAS";"DOKUMENTO DATA";"TRANSAKCIJOS TIPAS";"NUORODA";"DEBETAS/KREDITAS";"SUMA SĄSKAITOS VALIUTA";"SĄSKAITOS NR";"SĄSKAITOS VALIUTA";
+"TM001";2025-01-15;"EUR";100,50;"AB SEB BANKAS";"";"";"";"CBVILT2X";"SUMOKĖTOS PALŪKANOS EUR, dok. nr. TM001, operacijos nr. RO001";"RO001";2025-01-15;"PMNTMCOPINTR-Palūkanos į sąskaitą";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, 'test.csv');
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions[0]).toMatchObject({
+        externalId: 'RO001',
+        merchant: 'AB SEB BANKAS',
+        description:
+          'SUMOKĖTOS PALŪKANOS EUR, dok. nr. TM001, operacijos nr. RO001',
+        category: 'PMNTMCOPINTR-Palūkanos į sąskaitą',
+      });
+    });
+
     it('should parse debit transactions with negative amounts', async () => {
       const csvContent = `"SĄSKAITOS  (LT123456789012345678) IŠRAŠAS (UŽ LAIKOTARPĮ: 2025-01-01-2025-01-31)";
 "DOK NR.";"DATA";"VALIUTA";"SUMA";"MOKĖTOJO ARBA GAVĖJO PAVADINIMAS";"MOKĖTOJO ARBA GAVĖJO IDENTIFIKACINIS KODAS";"SĄSKAITA";"KREDITO ĮSTAIGOS PAVADINIMAS";"KREDITO ĮSTAIGOS SWIFT KODAS";"MOKĖJIMO PASKIRTIS";"TRANSAKCIJOS KODAS";"DOKUMENTO DATA";"TRANSAKCIJOS TIPAS";"NUORODA";"DEBETAS/KREDITAS";"SUMA SĄSKAITOS VALIUTA";"SĄSKAITOS NR";"SĄSKAITOS VALIUTA";
@@ -121,6 +141,29 @@ describe('SebLtParser', () => {
         amount: 100.5,
         currency: 'EUR',
         merchant: 'Test Merchant',
+      });
+    });
+
+    it('should parse description field from DETAILS OF PAYMENTS (English)', async () => {
+      const csvContent = `"ACCOUNT  (LT123456789012345678) STATEMENT (FOR PERIOD: 2025-01-01-2025-01-31)";
+"INSTRUCTION ID";"DATE";"CURRENCY";"AMOUNT";"COUNTERPARTY";"DEBTOR/CREDITOR ID";"ACCOUNT NO";"CREDIT INSTITUTION NAME";"CREDIT INSTITUTION SWIFT";"DETAILS OF PAYMENTS";"TRANSACTION CODE";"DOCUMENT DATE";"TRANSACTION TYPE";"REFERENCE NO";"DEBIT/CREDIT";"AMOUNT IN ACCOUNT CURRENCY";"ACCOUNT NO";"ACCOUNT CURRENCY";
+"127607650";2024-08-26;"EUR";3543,72;"NOVIKOV DMYTRO";"";"LT647044090103068865";"AB SEB BANKAS";"CBVILT2X";"Term deposit, doc. no. 127607650, transaction no. RO1574906438L02";"RO1574906438L02";2024-08-26;"PMNTRCDTBOOK-Pinigų pervedimas į terminuoto indėlio sąskaitą";"";"C";3543,72;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, 'test-english.csv');
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions[0]).toMatchObject({
+        externalId: 'RO1574906438L02',
+        merchant: 'NOVIKOV DMYTRO',
+        description:
+          'Term deposit, doc. no. 127607650, transaction no. RO1574906438L02',
+        category:
+          'PMNTRCDTBOOK-Pinigų pervedimas į terminuoto indėlio sąskaitą',
+        amount: 3543.72,
+        currency: 'EUR',
       });
     });
 
