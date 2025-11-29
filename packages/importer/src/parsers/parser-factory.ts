@@ -14,7 +14,8 @@ export async function getParser(filePath: string): Promise<BaseParser> {
   for (const parser of PARSERS) {
     // For SEB, check if file has the characteristic header pattern
     if (parser.bankCode === "SEB") {
-      const hasSebPattern = firstLines.some(
+      // Check for Lithuanian format
+      const hasLithuanianPattern = firstLines.some(
         (line) =>
           line.includes("SĄSKAITOS") &&
           line.includes("IŠRAŠAS") &&
@@ -22,7 +23,16 @@ export async function getParser(filePath: string): Promise<BaseParser> {
             (l) => l.includes("DOK NR.") && l.includes("DEBETAS/KREDITAS")
           )
       );
-      if (hasSebPattern) {
+      // Check for English format
+      const hasEnglishPattern = firstLines.some(
+        (line) =>
+          line.includes("ACCOUNT") &&
+          line.includes("STATEMENT") &&
+          firstLines.some(
+            (l) => l.includes("INSTRUCTION ID") && l.includes("DEBIT/CREDIT")
+          )
+      );
+      if (hasLithuanianPattern || hasEnglishPattern) {
         return parser;
       }
     }

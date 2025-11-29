@@ -20,12 +20,13 @@ export async function isDuplicate(
 export async function filterDuplicates(
   prisma: PrismaClient,
   transactions: Array<RawTransactionData>,
-  accountId: string
+  defaultAccountId: string
 ): Promise<Array<RawTransactionData>> {
   const filtered: Array<RawTransactionData> = [];
 
   for (const transaction of transactions) {
-    const duplicate = await isDuplicate(prisma, transaction, accountId);
+    const targetAccountId = transaction.accountNumber || defaultAccountId;
+    const duplicate = await isDuplicate(prisma, transaction, targetAccountId);
     if (!duplicate) {
       filtered.push(transaction);
     }

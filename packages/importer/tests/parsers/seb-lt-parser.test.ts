@@ -99,5 +99,41 @@ describe("SebLtParser", () => {
         "No transactions found in CSV"
       );
     });
+
+    it("should parse SEB CSV with English headers", async () => {
+      const csvContent = `"ACCOUNT  (LT123456789012345678) STATEMENT (FOR PERIOD: 2025-01-01-2025-01-31)";
+"INSTRUCTION ID";"DATE";"CURRENCY";"AMOUNT";"COUNTERPARTY";"DEBTOR/CREDITOR ID";"ACCOUNT NO";"CREDIT INSTITUTION NAME";"CREDIT INSTITUTION SWIFT";"DETAILS OF PAYMENTS";"TRANSACTION CODE";"DOCUMENT DATE";"TRANSACTION TYPE";"REFERENCE NO";"DEBIT/CREDIT";"AMOUNT IN ACCOUNT CURRENCY";"ACCOUNT NO";"ACCOUNT CURRENCY";
+"TM001";2025-01-15;"EUR";100,50;"Test Merchant";"";"";"";"";"";"RO001";2025-01-15;"Payment";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-english.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.accountId).toBe("LT123456789012345678");
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0]).toMatchObject({
+        externalId: "TM001",
+        amount: 100.5,
+        currency: "EUR",
+        merchant: "Test Merchant",
+      });
+    });
+
+    it("should parse English debit transactions with negative amounts", async () => {
+      const csvContent = `"ACCOUNT  (LT123456789012345678) STATEMENT (FOR PERIOD: 2025-01-01-2025-01-31)";
+"INSTRUCTION ID";"DATE";"CURRENCY";"AMOUNT";"COUNTERPARTY";"DEBTOR/CREDITOR ID";"ACCOUNT NO";"CREDIT INSTITUTION NAME";"CREDIT INSTITUTION SWIFT";"DETAILS OF PAYMENTS";"TRANSACTION CODE";"DOCUMENT DATE";"TRANSACTION TYPE";"REFERENCE NO";"DEBIT/CREDIT";"AMOUNT IN ACCOUNT CURRENCY";"ACCOUNT NO";"ACCOUNT CURRENCY";
+"TM002";2025-01-20;"EUR";50,25;"Shop";"";"";"";"";"";"RO002";2025-01-20;"Purchase";"";"D";50,25;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-english.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions[0].amount).toBe(-50.25);
+      expect(result.transactions[0].typeIndicator).toBe("D");
+    });
   });
 });

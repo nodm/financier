@@ -41,6 +41,17 @@ export async function importCSV(
     console.log(`[INFO] Parsed ${transactions.length} transactions`);
   }
 
+  // Determine all accounts involved
+  const accountIds = new Set<string>();
+  if (overrideAccountId) {
+    accountIds.add(overrideAccountId);
+  } else {
+    if (parsedAccountId) accountIds.add(parsedAccountId);
+    transactions.forEach((t) => {
+      if (t.accountNumber) accountIds.add(t.accountNumber);
+    });
+  }
+
   if (dryRun) {
     return {
       success: true,
@@ -49,7 +60,7 @@ export async function importCSV(
         imported: 0,
         duplicates: 0,
         failed: 0,
-        accounts: [accountId],
+        accounts: Array.from(accountIds),
       },
       errors: [],
     };
@@ -59,8 +70,10 @@ export async function importCSV(
   const prisma = getDatabaseClient();
 
   try {
-    // Ensure account exists
-    await ensureAccount(prisma, accountId, parser.bankCode);
+    // Ensure all accounts exist
+    for (const accId of accountIds) {
+      await ensureAccount(prisma, accId, parser.bankCode);
+    }
 
     if (verbose) {
       console.log(`[INFO] Checking for duplicates...`);
@@ -91,10 +104,12 @@ export async function importCSV(
               : t.amount;
           const type =
             amount >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT;
+          const targetAccountId =
+            overrideAccountId || t.accountNumber || parsedAccountId;
 
           return {
             id: crypto.randomUUID(),
-            accountId,
+            accountId: targetAccountId,
             counterpartyAccountId: null,
             externalId: t.externalId,
             date: typeof t.date === "string" ? new Date(t.date) : t.date,
@@ -124,7 +139,7 @@ export async function importCSV(
         imported: newTransactions.length,
         duplicates,
         failed: 0,
-        accounts: [accountId],
+        accounts: Array.from(accountIds),
       },
       errors: [],
     };
