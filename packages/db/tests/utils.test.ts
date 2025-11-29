@@ -1,7 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import { resetDatabaseClient } from "../src/lib/client.js";
 import {
   databaseExists,
   ensureDatabaseDirectory,
@@ -9,7 +10,6 @@ import {
   getDatabasePath,
   initializeDatabase,
 } from "../src/lib/utils.js";
-import { resetDatabaseClient } from "../src/lib/client.js";
 
 describe("Database Utils", () => {
   let testDir: string;

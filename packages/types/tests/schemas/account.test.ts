@@ -1,11 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
-import { BankCode } from "../../src/types/bank.js";
-import { Currency } from "../../src/types/currency.js";
 import {
   accountSchema,
   createAccountSchema,
   updateAccountSchema,
 } from "../../src/schemas/account.js";
+import { BankCode } from "../../src/types/bank.js";
+import { Currency } from "../../src/types/currency.js";
 
 describe("accountSchema", () => {
   it("should validate a valid account", () => {

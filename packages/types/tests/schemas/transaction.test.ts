@@ -1,12 +1,12 @@
 import { describe, expect, it } from "@jest/globals";
-import { Currency } from "../../src/types/currency.js";
-import { TransactionType } from "../../src/types/transaction.js";
 import {
   createTransactionSchema,
   rawTransactionDataSchema,
   transactionFiltersSchema,
   transactionSchema,
 } from "../../src/schemas/transaction.js";
+import { Currency } from "../../src/types/currency.js";
+import { TransactionType } from "../../src/types/transaction.js";
 
 describe("transactionSchema", () => {
   it("should validate a valid transaction", () => {

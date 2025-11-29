@@ -8,6 +8,7 @@ export interface ImportOptions {
   dryRun?: boolean;
   accountId?: string;
   verbose?: boolean;
+  showDuplicates?: boolean;
 }
 
 export async function importCSV(
@@ -18,6 +19,7 @@ export async function importCSV(
     dryRun = false,
     accountId: overrideAccountId,
     verbose = false,
+    showDuplicates = false,
   } = options;
 
   if (verbose) {
@@ -52,27 +54,15 @@ export async function importCSV(
     });
   }
 
-  if (dryRun) {
-    return {
-      success: true,
-      statistics: {
-        totalRows: transactions.length,
-        imported: 0,
-        duplicates: 0,
-        failed: 0,
-        accounts: Array.from(accountIds),
-      },
-      errors: [],
-    };
-  }
-
-  // Connect to database
+  // Connect to database (needed for both dry-run and actual import to check duplicates)
   const prisma = getDatabaseClient();
 
   try {
-    // Ensure all accounts exist
-    for (const accId of accountIds) {
-      await ensureAccount(prisma, accId, parser.bankCode);
+    // Ensure all accounts exist (skip in dry-run mode)
+    if (!dryRun) {
+      for (const accId of accountIds) {
+        await ensureAccount(prisma, accId, parser.bankCode);
+      }
     }
 
     if (verbose) {
@@ -80,18 +70,35 @@ export async function importCSV(
     }
 
     // Filter duplicates
-    const newTransactions = await filterDuplicates(
+    const { newTransactions, duplicateTransactions } = await filterDuplicates(
       prisma,
       transactions,
       accountId
     );
-    const duplicates = transactions.length - newTransactions.length;
+    const duplicates = duplicateTransactions.length;
 
     if (verbose) {
-      console.log(`[INFO] Skipping ${duplicates} duplicates`);
+      console.log(`[INFO] Found ${duplicates} duplicates`);
       console.log(
-        `[INFO] Importing ${newTransactions.length} new transactions`
+        `[INFO] ${dryRun ? "Would import" : "Importing"} ${newTransactions.length} new transactions`
       );
+    }
+
+    if (dryRun) {
+      return {
+        success: true,
+        statistics: {
+          totalRows: transactions.length,
+          imported: newTransactions.length,
+          duplicates,
+          failed: 0,
+          accounts: Array.from(accountIds),
+        },
+        errors: [],
+        duplicateTransactions: showDuplicates
+          ? duplicateTransactions
+          : undefined,
+      };
     }
 
     // Insert transactions
@@ -142,6 +149,7 @@ export async function importCSV(
         accounts: Array.from(accountIds),
       },
       errors: [],
+      duplicateTransactions: showDuplicates ? duplicateTransactions : undefined,
     };
   } finally {
     await prisma.$disconnect();

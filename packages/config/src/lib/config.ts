@@ -17,9 +17,7 @@ export function getDefaultConfigDir(): string {
  */
 export async function loadConfig(configDir?: string): Promise<Config> {
   // Parse with schema defaults if configDir not provided
-  const defaultConfig = configSchema.parse(
-    configDir ? { configDir } : {}
-  );
+  const defaultConfig = configSchema.parse(configDir ? { configDir } : {});
   const effectiveConfigDir = configDir ?? defaultConfig.configDir;
   const configPath = join(effectiveConfigDir, "config.json");
 

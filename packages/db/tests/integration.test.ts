@@ -1,8 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { disconnectDatabase, getDatabaseClient, resetDatabaseClient } from "../src/lib/client.js";
+import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
+import {
+  disconnectDatabase,
+  getDatabaseClient,
+  resetDatabaseClient,
+} from "../src/lib/client.js";
 import { initializeDatabase } from "../src/lib/utils.js";
 
 describe("Database Integration", () => {

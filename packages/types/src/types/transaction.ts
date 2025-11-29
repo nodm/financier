@@ -141,6 +141,9 @@ export interface ImportResult {
 
   /** Validation errors (if any) */
   errors: Array<ImportErrorRecord>;
+
+  /** Duplicate transactions that were skipped (for review) */
+  duplicateTransactions?: Array<RawTransactionData>;
 }
 
 /**

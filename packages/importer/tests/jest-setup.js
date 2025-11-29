@@ -3,9 +3,9 @@
 
 // Mock papaparse to ensure it's properly loaded
 jest.mock(
-  'papaparse',
+  "papaparse",
   () => {
-    const actual = jest.requireActual('papaparse');
+    const actual = jest.requireActual("papaparse");
     return actual;
   },
   { virtual: false }

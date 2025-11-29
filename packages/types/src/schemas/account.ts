@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { Currency } from "../types/currency.js";
 import { BankCode } from "../types/bank.js";
+import { Currency } from "../types/currency.js";
 
 /**
  * Account schema for validation

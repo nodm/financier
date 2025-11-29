@@ -147,8 +147,10 @@ describe("duplicate-detector", () => {
         testAccountId
       );
 
-      expect(result).toHaveLength(1);
-      expect(result[0].externalId).toBe("TEST002");
+      expect(result.newTransactions).toHaveLength(1);
+      expect(result.newTransactions[0].externalId).toBe("TEST002");
+      expect(result.duplicateTransactions).toHaveLength(1);
+      expect(result.duplicateTransactions[0].externalId).toBe("TEST001");
     });
 
     it("should return all transactions if none are duplicates", async () => {
@@ -173,7 +175,8 @@ describe("duplicate-detector", () => {
         testAccountId
       );
 
-      expect(result).toHaveLength(2);
+      expect(result.newTransactions).toHaveLength(2);
+      expect(result.duplicateTransactions).toHaveLength(0);
     });
 
     it("should return empty array if all are duplicates", async () => {
@@ -223,7 +226,8 @@ describe("duplicate-detector", () => {
         testAccountId
       );
 
-      expect(result).toHaveLength(0);
+      expect(result.newTransactions).toHaveLength(0);
+      expect(result.duplicateTransactions).toHaveLength(2);
     });
   });
 });

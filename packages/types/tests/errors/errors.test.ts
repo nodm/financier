@@ -78,7 +78,9 @@ describe("ValidationError", () => {
     // Arrange & Act
     const stringError = new ValidationError("Invalid", "field", "test");
     const numberError = new ValidationError("Invalid", "field", 123);
-    const objectError = new ValidationError("Invalid", "field", { key: "value" });
+    const objectError = new ValidationError("Invalid", "field", {
+      key: "value",
+    });
     const nullError = new ValidationError("Invalid", "field", null);
 
     // Assert
@@ -316,13 +318,13 @@ describe("Error catching patterns", () => {
 
     // Act & Assert
     expect(processError(new ValidationError("Test", "amount"))).toBe(
-      "Validation failed: amount",
+      "Validation failed: amount"
     );
     expect(processError(new ImportError("Test", 42))).toBe(
-      "Import failed at row: 42",
+      "Import failed at row: 42"
     );
     expect(processError(new DatabaseError("Test"))).toBe(
-      "Financier error: DATABASE_ERROR",
+      "Financier error: DATABASE_ERROR"
     );
   });
 });
