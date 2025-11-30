@@ -1,5 +1,8 @@
-import type { PrismaClient } from "@nodm/financier-db";
+import type { getDatabaseClient } from "@nodm/financier-db";
+import { transactions } from "@nodm/financier-db";
 import type { RawTransactionData } from "@nodm/financier-types";
+import { and, eq } from "drizzle-orm";
+import { normalizeDate, normalizeDateToISO } from "../utils/date-utils.js";
 
 /**
  * Result of filtering duplicates
@@ -18,32 +21,35 @@ function getTransactionKey(
   transaction: RawTransactionData,
   accountId: string
 ): string {
-  const date =
-    transaction.date instanceof Date
-      ? transaction.date.toISOString()
-      : new Date(transaction.date).toISOString();
+  const date = normalizeDateToISO(transaction.date);
   return `${accountId}|${date}|${transaction.externalId || ""}`;
 }
 
 export async function isDuplicate(
-  prisma: PrismaClient,
+  db: ReturnType<typeof getDatabaseClient>,
   transaction: RawTransactionData,
   accountId: string
 ): Promise<boolean> {
-  const existing = await prisma.transaction.findFirst({
-    where: {
-      accountId,
-      externalId: transaction.externalId,
-      date: transaction.date,
-    },
-  });
+  const date = normalizeDate(transaction.date);
+
+  const [existing] = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.accountId, accountId),
+        eq(transactions.externalId, transaction.externalId),
+        eq(transactions.date, date)
+      )
+    )
+    .limit(1);
 
   return !!existing;
 }
 
 export async function filterDuplicates(
-  prisma: PrismaClient,
-  transactions: Array<RawTransactionData>,
+  db: ReturnType<typeof getDatabaseClient>,
+  allTransactions: Array<RawTransactionData>,
   defaultAccountId: string
 ): Promise<FilterDuplicatesResult> {
   const newTransactions: Array<RawTransactionData> = [];
@@ -51,7 +57,7 @@ export async function filterDuplicates(
   // Track keys we've already seen in this batch to detect intra-batch duplicates
   const seenInBatch = new Set<string>();
 
-  for (const transaction of transactions) {
+  for (const transaction of allTransactions) {
     const targetAccountId = transaction.accountNumber || defaultAccountId;
     const key = getTransactionKey(transaction, targetAccountId);
 
@@ -62,7 +68,7 @@ export async function filterDuplicates(
     }
 
     // Check against database
-    const duplicate = await isDuplicate(prisma, transaction, targetAccountId);
+    const duplicate = await isDuplicate(db, transaction, targetAccountId);
     if (duplicate) {
       duplicateTransactions.push(transaction);
     } else {

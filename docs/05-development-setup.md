@@ -12,7 +12,6 @@
 ### VSCode Extensions (Recommended)
 
 - **Biome** - Code linting and formatting
-- **Prisma** - Prisma schema support
 - **GitHub Copilot** - AI pair programming
 - **TypeScript and JavaScript Language Features** (built-in)
 
@@ -72,9 +71,10 @@ test.db-journal
 .DS_Store
 Thumbs.db
 
-# Prisma
-packages/db/prisma/dev.db
-packages/db/prisma/dev.db-journal
+# Drizzle
+packages/db/drizzle/
+packages/db/dev.db
+packages/db/dev.db-journal
 
 # User data
 .financier/
@@ -115,7 +115,7 @@ nx g @nx/js:library importer --directory=packages/importer --buildable --publish
 nx g @nx/js:library mcp-server --directory=packages/mcp-server --buildable --publishable --importPath=@nodm/financier-mcp-server
 
 # Create additional directories
-mkdir -p packages/db/prisma
+mkdir -p packages/db/drizzle
 mkdir docs samples
 ```
 
@@ -273,7 +273,7 @@ Nx generates base package files automatically. The generated `package.json` file
 - Include proper ESM configuration (`"type": "module"`)
 - Have correct exports and build configuration
 
-**Additional dependencies** (zod, prisma, commander, etc.) will be added during Phase 1-7 implementation as each package is developed.
+**Additional dependencies** (zod, drizzle-orm, commander, etc.) will be added during Phase 1-7 implementation as each package is developed.
 
 ### Package-Specific Dependencies
 
@@ -295,8 +295,8 @@ npm install --workspace=@nodm/financier-types
 **@nodm/financier-db** (Phase 2):
 ```bash
 cd packages/db
-npm install @prisma/client
-npm install --save-dev prisma
+npm install drizzle-orm better-sqlite3
+npm install --save-dev drizzle-kit @types/better-sqlite3
 npm install --workspace=@nodm/financier-types
 ```
 
@@ -445,17 +445,19 @@ nx run-many --target=type-check --all
 
 ## Database Setup
 
-### Initialize Prisma
+### Initialize Drizzle
 
 ```bash
 cd packages/db
 
-# Create initial schema (manually edit prisma/schema.prisma)
-# Then generate Prisma client
-npx prisma generate
+# Create schema files in src/schema/
+# accounts.ts, transactions.ts, index.ts
 
-# Create initial migration
-npx prisma migrate dev --name init
+# Generate migration from schema
+npm run db:generate
+
+# Apply migration
+npm run db:migrate
 ```
 
 ### Database Location
@@ -470,14 +472,14 @@ mkdir -p ~/.financier
 echo 'DATABASE_URL="file:${HOME}/.financier/data.db"' > .env
 ```
 
-### View Database (Prisma Studio)
+### View Database (Drizzle Studio)
 
 ```bash
 cd packages/db
-npx prisma studio
+npm run db:studio
 ```
 
-Opens web UI at `http://localhost:5555`
+Opens web UI for browsing database
 
 ---
 
@@ -533,13 +535,13 @@ nx build types
 nx build db
 ```
 
-**Issue**: Prisma client not generated
+**Issue**: Database schema not found
 
-**Solution**: Run Prisma generate
+**Solution**: Ensure schema files exist and build package
 
 ```bash
 cd packages/db
-npx prisma generate
+nx build db
 ```
 
 **Issue**: TypeScript errors in imports
@@ -571,10 +573,7 @@ nx run-many --target=build --all
     "source.organizeImports.biome": "explicit"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true,
-  "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
-  }
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
 ```
 
@@ -582,7 +581,7 @@ nx run-many --target=build --all
 
 ```json
 {
-  "recommendations": ["biomejs.biome", "prisma.prisma", "github.copilot"]
+  "recommendations": ["biomejs.biome", "github.copilot"]
 }
 ```
 
@@ -682,8 +681,8 @@ After setup is complete:
 
 1. ✅ Verify all packages build successfully
 2. ✅ Run test suite (should pass with no tests initially)
-3. ✅ Create initial Prisma schema
-4. ✅ Generate Prisma client
+3. ✅ Create Drizzle schema files
+4. ✅ Generate and apply database migrations
 5. ✅ Create sample CSV files for testing
 6. ✅ Begin implementation following specifications
 

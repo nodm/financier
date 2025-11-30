@@ -7,6 +7,7 @@ import {
   getDatabaseClient,
   resetDatabaseClient,
 } from "../src/lib/client.js";
+import { setupTestDatabase } from "./helpers/setup-test-db.js";
 
 describe("Database Client", () => {
   let testDir: string;
@@ -17,6 +18,7 @@ describe("Database Client", () => {
     testDir = mkdtempSync(join(tmpdir(), "financier-test-"));
     originalEnv = process.env.DATABASE_URL;
     process.env.DATABASE_URL = `file:${join(testDir, "test.db")}`;
+    setupTestDatabase();
   });
 
   afterEach(async () => {
@@ -31,14 +33,14 @@ describe("Database Client", () => {
   });
 
   describe("getDatabaseClient", () => {
-    it("should return a Prisma client instance", () => {
+    it("should return a Drizzle client instance", () => {
       // Act
       const client = getDatabaseClient();
 
       // Assert
       expect(client).toBeDefined();
-      expect(client.$connect).toBeDefined();
-      expect(client.$disconnect).toBeDefined();
+      expect(client.select).toBeDefined();
+      expect(client.insert).toBeDefined();
     });
 
     it("should return the same instance on multiple calls (singleton)", () => {
@@ -84,7 +86,7 @@ describe("Database Client", () => {
 
       // Assert
       expect(client).toBeDefined();
-      expect(client.$connect).toBeDefined();
+      expect(client.select).toBeDefined();
     });
   });
 
@@ -92,7 +94,6 @@ describe("Database Client", () => {
     it("should disconnect from database", async () => {
       // Arrange
       const client = getDatabaseClient();
-      await client.$connect();
 
       // Act
       await disconnectDatabase();

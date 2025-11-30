@@ -24,7 +24,7 @@
                     │
           ┌─────────▼──────────┐
           │    Database Layer  │
-          │  (Prisma Client)   │
+          │  (Drizzle ORM)     │
           └─────────┬──────────┘
                     │
           ┌─────────▼───────────┐
@@ -103,33 +103,37 @@ packages/types/
 
 **Exports**:
 ```typescript
-// Prisma Client
-export { PrismaClient } from '@prisma/client';
+// Drizzle Schema
+export { accounts, transactions } from './schema';
 
-// Generated Types
-export type { Transaction, Account, Prisma } from '@prisma/client';
+// Database Client
+export function getDatabaseClient(): BetterSQLite3Database;
 
 // Database Utilities
-export function getDatabaseClient(): PrismaClient;
 export function ensureDatabaseExists(): Promise;
-export function runMigrations(): Promise;
+export function disconnectDatabase(): Promise;
 ```
 
 **Directory Structure**:
 ```
 packages/db/
-├── prisma/
-│   ├── schema.prisma
-│   └── migrations/
-│       └── (migration files)
+├── drizzle/
+│   └── (migration files)
 ├── src/
 │   ├── index.ts
-│   └── client.ts
+│   ├── schema/
+│   │   ├── accounts.ts
+│   │   ├── transactions.ts
+│   │   └── index.ts
+│   └── lib/
+│       ├── client.ts
+│       └── utils.ts
+├── drizzle.config.ts
 ├── package.json
 └── tsconfig.json
 ```
 
-**Prisma Schema Location**: `packages/db/prisma/schema.prisma`
+**Drizzle Schema Location**: `packages/db/src/schema/`
 
 **Database Location**: `~/.financier/data.db` (created automatically)
 
@@ -290,7 +294,7 @@ interface GetStatisticsInput {
 1. LLM sends MCP request to server
 2. MCP server validates tool call parameters
 3. Server calls appropriate service method
-4. Service queries database using Prisma
+4. Service queries database using Drizzle
 5. Results are validated against Zod schemas (optional)
 6. Results formatted for LLM consumption
 7. MCP server returns formatted response
@@ -364,7 +368,7 @@ try {
 
 - **Path**: `~/.financier/data.db`
 - **Creation**: Automatic on first use
-- **Migrations**: Run automatically via Prisma Migrate
+- **Migrations**: Run via Drizzle Kit
 
 ### Connection Management
 
@@ -372,21 +376,21 @@ try {
 ```typescript
 const db = getDatabaseClient();
 await importTransactions(db, transactions);
-await db.$disconnect();
+await disconnectDatabase();
 ```
 
 **In MCP Server** (long-lived):
 ```typescript
 const db = getDatabaseClient();
 // Keep connection open for the server lifetime
-// Prisma handles connection pooling automatically
+// Single SQLite connection, no pooling needed
 ```
 
 ### Schema Management
 
-- Schema defined in `@nodm/financier-db/prisma/schema.prisma`
-- Migrations generated via `prisma migrate dev`
-- Migrations applied automatically on first run
+- Schema defined in `@nodm/financier-db/src/schema/`
+- Migrations generated via `drizzle-kit generate`
+- Migrations applied via `drizzle-kit migrate`
 - Future: Migration CLI command for manual control
 
 ## Configuration
@@ -433,7 +437,7 @@ console.log(config.database.url);
 ## Performance Considerations
 
 ### Importer
-- Batch inserts for large CSVs (use Prisma `createMany`)
+- Batch inserts for large CSVs (use Drizzle `insert().values([...])`)
 - Transaction batching (1000 records per batch)
 - Memory-efficient CSV streaming for large files
 - Index on `(accountId, date, externalId)` for duplicate detection

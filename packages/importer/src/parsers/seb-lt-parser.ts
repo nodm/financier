@@ -1,12 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from "node:fs";
 import {
   BankCode,
   type Currency,
   type RawTransactionData,
-} from '@nodm/financier-types';
-import PapaModule from 'papaparse';
-import type { ParseResult } from '../services/csv-reader.js';
-import { BaseParser, type ParsedData } from './base-parser.js';
+} from "@nodm/financier-types";
+import PapaModule from "papaparse";
+import type { ParseResult } from "../services/csv-reader.js";
+import { BaseParser, type ParsedData } from "./base-parser.js";
 
 // Handle both default and named exports
 const Papa =
@@ -22,53 +22,55 @@ const HEADER_MAPPINGS = {
   // Lithuanian -> normalized key
   // Note: "DOK NR." is the batch/clearing ID (e.g., CLR3887432), not unique per transaction
   // "TRANSAKCIJOS KODAS" contains the unique transaction reference (e.g., RO726122757)
-  'DOK NR.': 'instructionId',
-  'TRANSAKCIJOS KODAS': 'externalId',
-  DATA: 'date',
-  'SUMA SĄSKAITOS VALIUTA': 'amount',
-  SUMA: 'amountAlt',
-  'SĄSKAITOS VALIUTA': 'currency',
-  'MOKĖTOJO ARBA GAVĖJO PAVADINIMAS': 'merchant',
-  'TRANSAKCIJOS TIPAS': 'category',
-  'DEBETAS/KREDITAS': 'typeIndicator',
-  'SĄSKAITOS NR': 'accountNumber',
+  "DOK NR.": "instructionId",
+  "TRANSAKCIJOS KODAS": "externalId",
+  DATA: "date",
+  "SUMA SĄSKAITOS VALIUTA": "amount",
+  SUMA: "amountAlt",
+  "SĄSKAITOS VALIUTA": "currency",
+  "MOKĖTOJO ARBA GAVĖJO PAVADINIMAS": "merchant",
+  "TRANSAKCIJOS TIPAS": "category",
+  "DEBETAS/KREDITAS": "typeIndicator",
+  "SĄSKAITOS NR": "accountNumber",
+  "MOKĖJIMO PASKIRTIS": "description",
   // English -> normalized key
   // Note: "INSTRUCTION ID" is the batch/clearing ID (e.g., CLR3887432), not unique per transaction
   // "TRANSACTION CODE" contains the unique transaction reference (e.g., RO726122757)
-  'INSTRUCTION ID': 'instructionId',
-  'TRANSACTION CODE': 'externalId',
-  DATE: 'date',
-  'AMOUNT IN ACCOUNT CURRENCY': 'amount',
-  AMOUNT: 'amountAlt',
-  'ACCOUNT CURRENCY': 'currency',
-  COUNTERPARTY: 'merchant',
-  'TRANSACTION TYPE': 'category',
-  'DEBIT/CREDIT': 'typeIndicator',
-  'ACCOUNT NO': 'accountNumber',
+  "INSTRUCTION ID": "instructionId",
+  "TRANSACTION CODE": "externalId",
+  DATE: "date",
+  "AMOUNT IN ACCOUNT CURRENCY": "amount",
+  AMOUNT: "amountAlt",
+  "ACCOUNT CURRENCY": "currency",
+  COUNTERPARTY: "merchant",
+  "TRANSACTION TYPE": "category",
+  "DEBIT/CREDIT": "typeIndicator",
+  "ACCOUNT NO": "accountNumber",
+  "DETAILS OF PAYMENTS": "description",
 } as const;
 
 // Account separator patterns
 const ACCOUNT_SEPARATOR_PATTERNS = {
-  lithuanian: { account: 'SĄSKAITOS', statement: 'IŠRAŠAS' },
-  english: { account: 'ACCOUNT', statement: 'STATEMENT' },
+  lithuanian: { account: "SĄSKAITOS", statement: "IŠRAŠAS" },
+  english: { account: "ACCOUNT", statement: "STATEMENT" },
 };
 
 // Header detection patterns
 const HEADER_DETECTION_PATTERNS = {
-  lithuanian: { id: 'DOK NR.', type: 'DEBETAS/KREDITAS' },
-  english: { id: 'INSTRUCTION ID', type: 'DEBIT/CREDIT' },
+  lithuanian: { id: "DOK NR.", type: "DEBETAS/KREDITAS" },
+  english: { id: "INSTRUCTION ID", type: "DEBIT/CREDIT" },
 };
 
 export class SebLtParser extends BaseParser {
   readonly bankCode = BankCode.SEB;
-  readonly requiredHeaders = ['DOK NR.', 'SĄSKAITOS NR', 'DEBETAS/KREDITAS'];
+  readonly requiredHeaders = ["DOK NR.", "SĄSKAITOS NR", "DEBETAS/KREDITAS"];
 
   async parse(filePath: string): Promise<ParsedData> {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, "utf-8");
     const chunks = this.splitIntoAccountChunks(content);
 
     if (chunks.length === 0) {
-      throw new Error('No account data found in CSV');
+      throw new Error("No account data found in CSV");
     }
 
     // Aggregate transactions from all chunks
@@ -82,7 +84,7 @@ export class SebLtParser extends BaseParser {
     }
 
     if (allTransactions.length === 0) {
-      throw new Error('No transactions found in CSV');
+      throw new Error("No transactions found in CSV");
     }
 
     return {
@@ -91,15 +93,15 @@ export class SebLtParser extends BaseParser {
     };
   }
 
-  private detectFormat(content: string): 'lithuanian' | 'english' {
-    const firstLines = content.split('\n').slice(0, 10).join('\n');
+  private detectFormat(content: string): "lithuanian" | "english" {
+    const firstLines = content.split("\n").slice(0, 10).join("\n");
     if (
       firstLines.includes(ACCOUNT_SEPARATOR_PATTERNS.english.account) &&
       firstLines.includes(ACCOUNT_SEPARATOR_PATTERNS.english.statement)
     ) {
-      return 'english';
+      return "english";
     }
-    return 'lithuanian';
+    return "lithuanian";
   }
 
   private splitIntoAccountChunks(content: string): Array<AccountChunk> {
@@ -107,7 +109,7 @@ export class SebLtParser extends BaseParser {
     const separatorPattern = ACCOUNT_SEPARATOR_PATTERNS[format];
     const headerPattern = HEADER_DETECTION_PATTERNS[format];
 
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     const chunks: Array<AccountChunk> = [];
     let currentAccountId: string | null = null;
     let currentLines: Array<string> = [];
@@ -126,7 +128,7 @@ export class SebLtParser extends BaseParser {
         if (currentAccountId && currentLines.length > 0) {
           chunks.push({
             accountId: currentAccountId,
-            csvContent: currentLines.join('\n'),
+            csvContent: currentLines.join("\n"),
           });
         }
 
@@ -160,7 +162,7 @@ export class SebLtParser extends BaseParser {
     if (currentAccountId && currentLines.length > 0) {
       chunks.push({
         accountId: currentAccountId,
-        csvContent: currentLines.join('\n'),
+        csvContent: currentLines.join("\n"),
       });
     }
 
@@ -187,7 +189,7 @@ export class SebLtParser extends BaseParser {
 
   private parseChunk(chunk: AccountChunk): Array<RawTransactionData> {
     const result = Papa.parse(chunk.csvContent, {
-      delimiter: ';',
+      delimiter: ";",
       header: true,
       skipEmptyLines: true,
       transformHeader: (header: string) => header.trim(),
@@ -197,7 +199,7 @@ export class SebLtParser extends BaseParser {
       throw new Error(
         `CSV parse error: ${result.errors
           .map((e: { message: string }) => e.message)
-          .join(', ')}`
+          .join(", ")}`
       );
     }
 
@@ -206,8 +208,8 @@ export class SebLtParser extends BaseParser {
         const r = row as Record<string, string>;
         // Check for both Lithuanian and English transaction code columns (unique per transaction)
         const transactionCode =
-          r['TRANSAKCIJOS KODAS'] || r['TRANSACTION CODE'];
-        return transactionCode && transactionCode.trim() !== '';
+          r["TRANSAKCIJOS KODAS"] || r["TRANSACTION CODE"];
+        return transactionCode && transactionCode.trim() !== "";
       })
       .map((row: unknown) =>
         this.mapRow(
@@ -219,7 +221,7 @@ export class SebLtParser extends BaseParser {
 
   // biome-ignore lint/correctness/noUnusedFunctionParameters: Not used in this implementation
   protected extractAccountId(data: ParseResult): string {
-    return '';
+    return "";
   }
 
   protected mapRow(
@@ -230,28 +232,33 @@ export class SebLtParser extends BaseParser {
     const date = new Date(row.date || row.DATA);
 
     // Parse amount - comma decimal separator, use normalized keys
-    const amountStr = row.amount || row.amountAlt || '0';
-    const amount = Number.parseFloat(amountStr.replace(',', '.'));
+    const amountStr = row.amount || row.amountAlt || "0";
+    const amount = Number.parseFloat(amountStr.replace(",", "."));
 
     // Determine transaction type - use normalized key
-    const typeIndicator = row.typeIndicator || row['DEBETAS/KREDITAS'];
+    const typeIndicator = row.typeIndicator || row["DEBETAS/KREDITAS"];
 
     // Use transaction code as externalId (unique per transaction)
     // Falls back to instruction ID if transaction code is not available
     const externalId =
       row.externalId ||
-      row['TRANSAKCIJOS KODAS'] ||
-      row['TRANSACTION CODE'] ||
+      row["TRANSAKCIJOS KODAS"] ||
+      row["TRANSACTION CODE"] ||
       row.instructionId ||
-      row['DOK NR.'];
+      row["DOK NR."];
 
     return {
       externalId,
       date,
-      amount: typeIndicator === 'D' ? -Math.abs(amount) : Math.abs(amount),
-      currency: (row.currency || row['SĄSKAITOS VALIUTA'] || 'EUR') as Currency,
-      merchant: row.merchant || row['MOKĖTOJO ARBA GAVĖJO PAVADINIMAS'] || null,
-      category: row.category || row['TRANSAKCIJOS TIPAS'] || null,
+      amount: typeIndicator === "D" ? -Math.abs(amount) : Math.abs(amount),
+      currency: (row.currency || row["SĄSKAITOS VALIUTA"] || "EUR") as Currency,
+      merchant: row.merchant || row["MOKĖTOJO ARBA GAVĖJO PAVADINIMAS"] || null,
+      description:
+        row.description ||
+        row["MOKĖJIMO PASKIRTIS"] ||
+        row["DETAILS OF PAYMENTS"] ||
+        null,
+      category: row.category || row["TRANSAKCIJOS TIPAS"] || null,
       typeIndicator,
       accountNumber: accountId,
     };

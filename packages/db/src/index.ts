@@ -1,4 +1,3 @@
-export { Prisma, PrismaClient } from "@prisma/client";
 export {
   disconnectDatabase,
   getDatabaseClient,
@@ -11,3 +10,4 @@ export {
   getDatabasePath,
   initializeDatabase,
 } from "./lib/utils.js";
+export * from "./schema/index.js";

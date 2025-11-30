@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { DatabaseError } from "@nodm/financier-types";
+import { sql } from "drizzle-orm";
 import { getDatabaseClient } from "./client.js";
 
 /**
@@ -51,9 +52,8 @@ export async function initializeDatabase(): Promise<void> {
   const client = getDatabaseClient();
 
   try {
-    await client.$connect();
     // Verify connection with simple query
-    await client.$queryRaw`SELECT 1`;
+    client.run(sql`SELECT 1`);
   } catch (error) {
     throw new DatabaseError(
       "Failed to initialize database",

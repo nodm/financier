@@ -135,35 +135,36 @@ nx test config
 
 ### Phase 2: Database Package
 
-**Goal**: Set up Prisma, define schema, create database utilities
+**Goal**: Set up Drizzle ORM, define schema, create database utilities
 
 **Priority**: HIGH
 
 **Tasks**:
 
-1. **Create Prisma schema**
+1. **Create Drizzle schema**
 
-   - Define `Account` model (UUID id, hash, mask)
-   - Define `Transaction` model (UUID id, accountId FK)
-   - Add indexes and constraints
-   - Configure SQLite datasource
+   - Define `accounts` table schema (IBAN id, metadata fields)
+   - Define `transactions` table schema (UUID id, accountId FK)
+   - Add indexes and unique constraints
+   - Configure foreign keys and relations
 
-2. **Generate Prisma client**
+2. **Create database client**
 
    ```bash
    cd packages/db
-   npx prisma generate
+   # Schema files in src/schema/
    ```
 
 3. **Create database utilities**
 
-   - `src/client.ts` - getDatabaseClient() function
-   - `src/utils.ts` - ensureDatabaseExists(), runMigrations()
+   - `src/lib/client.ts` - getDatabaseClient() function
+   - `src/lib/utils.ts` - ensureDatabaseExists(), initializeDatabase()
 
-4. **Create initial migration**
+4. **Generate and apply migrations**
 
    ```bash
-   npx prisma migrate dev --name init
+   npm run db:generate  # Generate migration from schema
+   npm run db:migrate   # Apply migration
    ```
 
 5. **Write tests**
@@ -175,12 +176,17 @@ nx test config
 
 ```
 packages/db/
-├── prisma/
-│   └── schema.prisma
+├── drizzle/            # Generated migrations
 ├── src/
-│   ├── index.ts
-│   ├── client.ts
-│   └── utils.ts
+│   ├── schema/
+│   │   ├── accounts.ts
+│   │   ├── transactions.ts
+│   │   └── index.ts
+│   ├── lib/
+│   │   ├── client.ts
+│   │   └── utils.ts
+│   └── index.ts
+├── drizzle.config.ts
 └── .env
 ```
 
@@ -352,8 +358,9 @@ financier import tests/fixtures/bank1.csv --dry-run
 
 3. **Implement batch insertion**
 
-   - Use Prisma createMany
+   - Use Drizzle batch insert with .values()
    - Handle large CSV files efficiently
+   - Use .onConflictDoNothing() for duplicate handling
 
 4. **Add output formatting**
 
@@ -466,7 +473,7 @@ nx run mcp-server:start
 
    - `src/tools/query-transactions.ts`
    - Input validation
-   - Build dynamic Prisma query
+   - Build dynamic Drizzle query
    - Format response
 
 2. **Implement get_accounts tool**

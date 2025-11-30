@@ -1,15 +1,39 @@
 import { DatabaseError } from "@nodm/financier-types";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaClient } from "@prisma/client";
+import * as BetterSqlite3Module from "better-sqlite3";
+import {
+  type BetterSQLite3Database,
+  drizzle,
+} from "drizzle-orm/better-sqlite3";
+import * as schema from "../schema/index.js";
 import { getDatabasePath } from "./utils.js";
 
-let prismaClient: PrismaClient | null = null;
+// Handle ESM/CJS interop - better-sqlite3 is a CommonJS module
+// Tested with better-sqlite3@7.x - may need adjustment for different versions
+type BetterSqlite3Type = typeof import("better-sqlite3");
+const Database = (
+  "default" in BetterSqlite3Module
+    ? (BetterSqlite3Module as { default: BetterSqlite3Type }).default
+    : BetterSqlite3Module
+) as BetterSqlite3Type;
+
+// Runtime check: ensure Database is a constructor function
+if (typeof Database !== "function") {
+  throw new Error(
+    "better-sqlite3 Database constructor not found. " +
+      "Check the module export structure and version compatibility. " +
+      "Tested with better-sqlite3@7.x. " +
+      "If you recently upgraded better-sqlite3, update the ESM/CJS interop logic."
+  );
+}
+
+let db: BetterSQLite3Database<typeof schema> | null = null;
+let sqliteClient: ReturnType<typeof Database> | null = null;
 
 /**
- * Get or create Prisma client singleton
+ * Get or create Drizzle client singleton
  */
-export function getDatabaseClient(): PrismaClient {
-  if (!prismaClient) {
+export function getDatabaseClient(): BetterSQLite3Database<typeof schema> {
+  if (!db) {
     try {
       const databaseUrl =
         process.env.DATABASE_URL || `file:${getDatabasePath()}`;
@@ -21,20 +45,13 @@ export function getDatabaseClient(): PrismaClient {
           ? databaseUrl.slice(5)
           : databaseUrl;
 
-      const adapter = new PrismaBetterSqlite3({
-        url: dbPath,
+      sqliteClient = new Database(dbPath, {
         verbose:
           process.env.NODE_ENV === "development" ? console.log : undefined,
         timeout: 5000,
       });
 
-      prismaClient = new PrismaClient({
-        adapter,
-        log:
-          process.env.NODE_ENV === "development"
-            ? ["query", "error", "warn"]
-            : ["error"],
-      });
+      db = drizzle(sqliteClient, { schema });
     } catch (error) {
       throw new DatabaseError(
         "Failed to initialize database client",
@@ -42,16 +59,17 @@ export function getDatabaseClient(): PrismaClient {
       );
     }
   }
-  return prismaClient;
+  return db;
 }
 
 /**
  * Disconnect from database
  */
 export async function disconnectDatabase(): Promise<void> {
-  if (prismaClient) {
-    await prismaClient.$disconnect();
-    prismaClient = null;
+  if (sqliteClient) {
+    sqliteClient.close();
+    sqliteClient = null;
+    db = null;
   }
 }
 

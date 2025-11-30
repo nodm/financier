@@ -30,7 +30,7 @@ Model Context Protocol is a standard for connecting LLMs to external data source
 
 ```
 1. Start server process (long-running daemon)
-2. Initialize Prisma database client
+2. Initialize Drizzle database client
 3. Register MCP tools
 4. Listen for tool call requests
 5. Process requests, query database
@@ -118,8 +118,8 @@ interface Transaction {
 - If `minAmount` and `maxAmount` provided, `minAmount` <= `maxAmount`
 
 **Implementation Notes**:
-- Use Prisma `findMany` with dynamic where clause
-- Apply filters incrementally (build query object)
+- Use Drizzle `.select().from()` with dynamic `.where()` conditions
+- Apply filters incrementally using `and()` helper
 - Return empty array if no matches, not error
 - Include pagination metadata for large result sets
 
@@ -171,7 +171,7 @@ interface Account {
 - Query all accounts from database
 - If `includeBalance`, get latest transaction per account
 - If `includeSummary`, count transactions per account
-- Use Prisma aggregations for efficiency
+- Use Drizzle aggregation functions (count, sum) for efficiency
 
 ---
 
@@ -216,7 +216,7 @@ interface SearchTransactionsOutput {
 
 **Implementation Notes**:
 - Search in `description` and `merchant` fields
-- Use case-insensitive matching (Prisma `contains` with `mode: 'insensitive'`)
+- Use `like()` with `%pattern%` for case-insensitive matching
 - Order by date descending (most recent first)
 - Consider SQLite FTS (Full-Text Search) extension for better performance (future)
 
@@ -278,7 +278,7 @@ interface GroupedData {
 ```
 
 **Implementation Notes**:
-- Use Prisma `groupBy` for aggregations
+- Use Drizzle `.groupBy()` with aggregation functions
 - Separate income (credit) and expenses (debit)
 - Calculate percentages client-side
 - Format month as "YYYY-MM" for groupBy: month
@@ -406,7 +406,7 @@ import { getDatabaseClient } from '@nodm/financier-db';
 const db = getDatabaseClient();
 
 // Client stays connected for server lifetime
-// Prisma handles connection pooling
+// better-sqlite3 maintains single connection
 ```
 
 ---
@@ -473,38 +473,44 @@ The largest was €78.50 at Whole Foods on October 15th.
 **File**: `packages/mcp-server/src/services/transaction-service.ts`
 
 ```typescript
-import { PrismaClient } from '@nodm/financier-db';
+import { getDatabaseClient, transactions } from '@nodm/financier-db';
 import type { QueryTransactionsInput } from '@nodm/financier-types';
+import { and, count, desc, asc } from 'drizzle-orm';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 export class TransactionService {
-  constructor(private db: PrismaClient) {}
+  constructor(private db: BetterSQLite3Database) {}
 
   async queryTransactions(input: QueryTransactionsInput) {
-    const where = this.buildWhereClause(input);
-    
-    const [transactions, total] = await Promise.all([
-      this.db.transaction.findMany({
-        where,
-        take: input.limit || 100,
-        skip: input.offset || 0,
-        orderBy: this.buildOrderBy(input),
-      }),
-      this.db.transaction.count({ where }),
+    const conditions = this.buildWhereConditions(input);
+
+    const [results, [{ total }]] = await Promise.all([
+      this.db
+        .select()
+        .from(transactions)
+        .where(and(...conditions))
+        .limit(input.limit || 100)
+        .offset(input.offset || 0)
+        .orderBy(this.buildOrderBy(input)),
+      this.db
+        .select({ total: count() })
+        .from(transactions)
+        .where(and(...conditions)),
     ]);
 
     return {
-      transactions,
+      transactions: results,
       total,
-      hasMore: total > (input.offset || 0) + transactions.length,
+      hasMore: total > (input.offset || 0) + results.length,
     };
   }
 
-  private buildWhereClause(input: QueryTransactionsInput) {
-    // Build Prisma where object from input filters
+  private buildWhereConditions(input: QueryTransactionsInput) {
+    // Build Drizzle where conditions array from input filters
   }
 
   private buildOrderBy(input: QueryTransactionsInput) {
-    // Build Prisma orderBy from sortBy/sortOrder
+    // Return desc()/asc() based on sortBy/sortOrder
   }
 }
 ```
@@ -515,7 +521,7 @@ export class TransactionService {
 
 ```typescript
 export class AccountService {
-  constructor(private db: PrismaClient) {}
+  constructor(private db: BetterSQLite3Database) {}
 
   async getAccounts(input: GetAccountsInput) {
     const accounts = await this.db.account.findMany();
@@ -583,7 +589,7 @@ Test full MCP server workflow:
 ```typescript
 describe('MCP Server', () => {
   let server: Server;
-  let db: PrismaClient;
+  let db: BetterSQLite3Database;
 
   beforeAll(async () => {
     db = getTestDatabaseClient();
@@ -646,7 +652,7 @@ logger.error({ error: err.message }, 'Database error');
 
 1. **Use indexes**: Database queries leverage existing indexes
 2. **Pagination**: Always limit results, use offset for pagination
-3. **Selective fields**: Only select needed fields (use Prisma `select`)
+3. **Selective fields**: Only select needed fields (use Drizzle `.select({ field1, field2 })`)
 4. **Aggregations**: Use database-level groupBy instead of application-level
 
 ### Caching Strategy (Future)

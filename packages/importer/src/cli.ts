@@ -1,6 +1,7 @@
 import type { RawTransactionData } from "@nodm/financier-types";
 import { Command } from "commander";
 import { importCSV } from "./services/transaction-importer.js";
+import { normalizeDate } from "./utils/date-utils.js";
 
 const program = new Command();
 
@@ -13,10 +14,7 @@ program
  * Format a transaction for display
  */
 function formatTransaction(t: RawTransactionData): string {
-  const date =
-    t.date instanceof Date
-      ? t.date.toISOString().split("T")[0]
-      : new Date(t.date).toISOString().split("T")[0];
+  const date = normalizeDate(t.date).toISOString().split("T")[0];
   const amount =
     typeof t.amount === "string" ? Number.parseFloat(t.amount) : t.amount;
   const amountStr = amount >= 0 ? `+${amount.toFixed(2)}` : amount.toFixed(2);

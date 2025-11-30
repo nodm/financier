@@ -96,6 +96,9 @@ export interface RawTransactionData {
   /** Merchant/description */
   merchant?: string | null;
 
+  /** Transaction description/payment purpose */
+  description?: string | null;
+
   /** Category (optional) */
   category?: string | null;
 

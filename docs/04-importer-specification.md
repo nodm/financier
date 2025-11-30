@@ -316,19 +316,27 @@ Check for duplicates before insertion using composite key:
 ### Implementation
 
 ```typescript
-async function isDuplicate(
-  db: PrismaClient,
-  transaction: ValidatedTransaction
-): Promise {
-  const existing = await db.transaction.findFirst({
-    where: {
-      accountId: transaction.accountId,
-      date: transaction.date,
-      externalId: transaction.externalId,
-    },
-  });
+import { and, eq } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-  return existing !== null;
+async function isDuplicate(
+  db: BetterSQLite3Database,
+  transaction: ValidatedTransaction
+): Promise<boolean> {
+  const [existing] = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.accountId, transaction.accountId),
+        eq(transactions.date, transaction.date),
+        eq(transactions.externalId, transaction.externalId)
+      )
+    )
+    .limit(1);
+
+  return existing !== undefined;
 }
 ```
 
@@ -399,8 +407,11 @@ export async function importCSV(
 ### Batch Insertion
 
 ```typescript
+import { transactions as transactionsTable } from '@nodm/financier-db';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+
 async function insertTransactions(
-  db: PrismaClient,
+  db: BetterSQLite3Database,
   transactions: ValidatedTransaction[]
 ) {
   const BATCH_SIZE = 1000;
@@ -408,10 +419,10 @@ async function insertTransactions(
   for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
     const batch = transactions.slice(i, i + BATCH_SIZE);
 
-    await db.transaction.createMany({
-      data: batch,
-      skipDuplicates: true,
-    });
+    await db
+      .insert(transactionsTable)
+      .values(batch)
+      .onConflictDoNothing();
   }
 }
 ```
@@ -419,23 +430,28 @@ async function insertTransactions(
 ### Account Creation
 
 ```typescript
+import { eq } from 'drizzle-orm';
+import { accounts } from '@nodm/financier-db';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+
 async function ensureAccountExists(
-  db: PrismaClient,
+  db: BetterSQLite3Database,
   accountId: string,
   bankCode: BankCode
 ) {
-  const existing = await db.account.findUnique({
-    where: { id: accountId },
-  });
+  const [existing] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, accountId))
+    .limit(1);
 
   if (!existing) {
-    await db.account.create({
-      data: {
-        id: accountId,
-        type: 'checking', // Default, can be updated later
-        currency: 'EUR', // Default from bank
-        bankCode,
-      },
+    await db.insert(accounts).values({
+      id: accountId,
+      name: `Account ${accountId.slice(-4)}`, // Default name from last 4 digits
+      currency: 'EUR', // Default from bank
+      bankCode,
+      updatedAt: new Date(),
     });
   }
 }
@@ -645,9 +661,9 @@ describe('Bank1Parser', () => {
 describe('Duplicate Detection', () => {
   it('should detect duplicate transactions', async () => {
     const db = getTestDatabaseClient();
-    await db.transaction.create({
-      data: testTransaction,
-    });
+    await db
+      .insert(transactionsTable)
+      .values(testTransaction);
 
     const isDup = await isDuplicate(db, testTransaction);
     expect(isDup).toBe(true);
@@ -661,12 +677,12 @@ Test full import workflow:
 
 ```typescript
 describe('Import Workflow', () => {
-  let db: PrismaClient;
+  let db: BetterSQLite3Database;
 
   beforeEach(async () => {
     db = getTestDatabaseClient();
-    await db.transaction.deleteMany();
-    await db.account.deleteMany();
+    await db.delete(transactionsTable);
+    await db.delete(accounts);
   });
 
   it('should import CSV file successfully', async () => {
@@ -677,8 +693,8 @@ describe('Import Workflow', () => {
     expect(result.imported).toBe(10);
     expect(result.skipped).toBe(0);
 
-    const transactions = await db.transaction.findMany();
-    expect(transactions).toHaveLength(10);
+    const results = await db.select().from(transactionsTable);
+    expect(results).toHaveLength(10);
   });
 
   it('should skip duplicates on re-import', async () => {
