@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Personal finance management system with SQLite database, Prisma ORM, MCP server for LLM integration, and CLI importer for bank statements. Monorepo using Nx.
+Personal finance management system with SQLite database, Drizzle ORM, MCP server for LLM integration, and CLI importer for bank statements. Monorepo using Nx.
 
-Tech stack: Node.js, TypeScript (ES2023), Nx, Prisma, SQLite, Zod
+Tech stack: Node.js, TypeScript (ES2023), Nx, Drizzle ORM, SQLite, Zod
 
 ## Common Commands
 
@@ -66,21 +66,21 @@ npx nx sync
 npx nx sync:check  # For CI
 ```
 
-### Database (Prisma)
+### Database (Drizzle)
 ```bash
 cd packages/db
 
-# Generate Prisma client
-npx prisma generate
+# Generate migration
+npm run db:generate
 
-# Create migration
-npx prisma migrate dev --name <migration_name>
+# Push schema to database
+npm run db:push
 
 # Apply migrations
-npx prisma migrate deploy
+npm run db:migrate
 
-# Open Prisma Studio
-npx prisma studio
+# Open Drizzle Studio
+npm run db:studio
 
 # Database location: ~/.financier/data.db
 ```
@@ -102,7 +102,7 @@ nx run mcp-server:start
 ```
 @nodm/financier-types      # Shared types and Zod schemas (no dependencies)
 @nodm/financier-config     # Configuration management (depends on types)
-@nodm/financier-db         # Prisma schema and client (depends on types)
+@nodm/financier-db         # Drizzle schema and client (depends on types)
 @nodm/financier-importer   # CLI tool (depends on db, config, types)
 @nodm/financier-mcp-server # MCP server (depends on db, config, types)
 ```
@@ -117,7 +117,8 @@ mcp-server─┤     └──> config
 
 ### Key Locations
 - Database: `~/.financier/data.db`
-- Prisma schema: `packages/db/prisma/schema.prisma`
+- Drizzle schema: `packages/db/src/schema/`
+- Migrations: `packages/db/drizzle/`
 - Documentation: `docs/*.md`
 - Test fixtures: `packages/*/tests/fixtures/`
 - CSV samples: `samples/*.csv` (to be provided)
@@ -139,7 +140,7 @@ Account numbers are hashed for privacy, with masked display.
 2. **Type inference** - avoid explicit return types:
    ```typescript
    function getAccount(id: string) {  // ✅
-     return db.account.findUnique({ where: { id } });
+     return db.select().from(accounts).where(eq(accounts.id, id));
    }
    ```
 
@@ -281,9 +282,9 @@ throw new Error('Invalid amount');
 ## Performance
 
 - Batch database operations (1000 records per batch)
-- Use Prisma indexes for common queries
-- Paginate large result sets
-- Use `createMany` for bulk inserts
+- Use Drizzle indexes for common queries
+- Paginate large result sets with `.limit()` and `.offset()`
+- Use `db.insert().values([...])` for bulk inserts
 
 ## Documentation
 
@@ -295,6 +296,8 @@ All technical docs in `/docs`:
 - `04-importer-specification.md` - Importer CLI specification
 - `05-development-setup.md` - Setup guide
 - `06-implementation-plan.md` - Step-by-step implementation
+- `07-drizzle-migration-plan.md` - Prisma to Drizzle migration
+- `08-drizzle-guide.md` - Drizzle ORM usage guide
 
 Update docs when architecture, schema, or APIs change.
 

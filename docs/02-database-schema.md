@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Financier uses SQLite as the local database, accessed through Prisma ORM. The schema is designed to be normalized, efficient for queries, and extensible for future features.
+The Financier uses SQLite as the local database, accessed through Drizzle ORM. The schema is designed to be normalized, efficient for queries, and extensible for future features.
 
 **Database Location**: `~/.financier/data.db`
 
@@ -96,7 +96,6 @@ Stores individual financial transactions
 - Foreign key: `accountId` references `accounts.id`
 - Foreign key: `counterpartyAccountId` references `accounts.id` (optional)
 - Unique constraint on `(accountId, date, externalId)` for duplicate prevention
-- Check constraint: `amount != 0`
 
 **Indexes**:
 
@@ -132,86 +131,99 @@ accounts (1) ──< (many) transactions (via counterpartyAccountId, optional)
 - Each transaction belongs to exactly one account
 - Each transaction optionally references a counterparty account (for internal transfers)
 
-## Prisma Schema Template
+## Drizzle Schema
 
-**Location**: `packages/db/prisma/schema.prisma`
+**Location**: `packages/db/src/schema/`
 
-**Schema**:
+**accounts.ts**:
 
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
+```typescript
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+export const accounts = sqliteTable(
+  "accounts",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    openDate: integer("openDate", { mode: "timestamp" }),
+    openingBalance: text("openingBalance"),
+    currentBalance: text("currentBalance"),
+    currency: text("currency").notNull(),
+    bankCode: text("bankCode").notNull(),
+    isActive: integer("isActive", { mode: "boolean" }).notNull().default(sql`1`),
+    createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull().$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    bankCodeIdx: index("accounts_bankCode_idx").on(table.bankCode),
+  })
+);
+```
 
-model Account {
-  id             String   @id // IBAN (user-provided)
-  name           String
-  openDate       DateTime?
-  openingBalance Decimal?
-  currentBalance Decimal?
-  currency       String
-  bankCode       String
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+**transactions.ts**:
 
-  transactions     Transaction[] @relation("AccountTransactions")
-  counterpartyTxns Transaction[] @relation("CounterpartyTransactions")
+```typescript
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+import { accounts } from "./accounts.js";
 
-  @@index([bankCode])
-  @@map("accounts")
-}
-
-model Transaction {
-  id                    String    @id @default(uuid())
-  accountId             String
-  counterpartyAccountId String?
-  date                  DateTime
-  amount                Decimal
-  currency              String
-  originalAmount        Decimal?
-  originalCurrency      String?
-  merchant              String?
-  description           String
-  category              String?
-  type                  String
-  balance               Decimal?
-  externalId            String?
-  source                String
-  importedAt            DateTime  @default(now())
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  account               Account   @relation("AccountTransactions", fields: [accountId], references: [id])
-  counterpartyAccount   Account?  @relation("CounterpartyTransactions", fields: [counterpartyAccountId], references: [id])
-
-  @@unique([accountId, date, externalId])
-  @@index([accountId])
-  @@index([counterpartyAccountId])
-  @@index([accountId, date])
-  @@index([date])
-  @@index([merchant])
-  @@index([category])
-  @@map("transactions")
-}
+export const transactions = sqliteTable(
+  "transactions",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("accountId")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "restrict" }),
+    counterpartyAccountId: text("counterpartyAccountId")
+      .references(() => accounts.id, { onDelete: "set null" }),
+    date: integer("date", { mode: "timestamp" }).notNull(),
+    amount: text("amount").notNull(),
+    currency: text("currency").notNull(),
+    originalAmount: text("originalAmount"),
+    originalCurrency: text("originalCurrency"),
+    merchant: text("merchant"),
+    description: text("description").notNull(),
+    category: text("category"),
+    type: text("type").notNull(),
+    balance: text("balance"),
+    externalId: text("externalId"),
+    source: text("source").notNull(),
+    importedAt: integer("importedAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    createdAt: integer("createdAt", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+    updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull().$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    accountIdIdx: index("transactions_accountId_idx").on(table.accountId),
+    counterpartyIdx: index("transactions_counterpartyAccountId_idx").on(table.counterpartyAccountId),
+    accountDateIdx: index("transactions_accountId_date_idx").on(table.accountId, table.date),
+    dateIdx: index("transactions_date_idx").on(table.date),
+    merchantIdx: index("transactions_merchant_idx").on(table.merchant),
+    categoryIdx: index("transactions_category_idx").on(table.category),
+    uniqueConstraint: unique("transactions_accountId_date_externalId_key").on(
+      table.accountId,
+      table.date,
+      table.externalId
+    ),
+  })
+);
 ```
 
 **Notes**:
 
-- Prisma uses `Decimal` type for precise monetary values (maps to SQLite TEXT internally)
-- `@default(uuid())` generates UUIDs for transaction IDs
-- Account.id contains IBAN directly (no @default, user-provided)
-- Two named relations on Account to handle both `accountId` and `counterpartyAccountId` foreign keys
-- `@@map` directives keep table names in snake_case
+- Drizzle stores decimals as TEXT for precision (explicit type)
+- UUIDs generated at application level (crypto.randomUUID())
+- Account.id contains IBAN directly (user-provided)
+- Foreign keys defined with onDelete behavior
+- Indexes defined in second parameter of sqliteTable
+- SQLite stores dates as INTEGER (Unix timestamp) with Drizzle's timestamp mode
+- `updatedAt` uses `.$onUpdate()` to auto-update (equivalent to Prisma's `@updatedAt`)
+- Boolean defaults use `sql\`1\`` (SQLite stores booleans as 0/1)
+- Timestamp defaults use `sql\`(unixepoch())\`` for SQLite's current Unix timestamp
 
 ## Environment Variables
 
-**DATABASE_URL**: Connection string for Prisma
+**DATABASE_URL**: Connection string for database (e.g., `file:~/.financier/data.db`)
 
 **Development**:
 
@@ -229,16 +241,17 @@ DATABASE_URL="file:./test.db"
 
 ### Migration Strategy
 
-- Prisma Migrate for schema changes
-- Migrations stored in `packages/db/prisma/migrations/`
-- Auto-run migrations on first use
-- Manual migration command (future): `financier db migrate`
+- Drizzle Kit for schema changes
+- Migrations stored in `packages/db/drizzle/`
+- Run migrations manually with `npm run db:migrate`
+- Push schema directly in development with `npm run db:push`
 
 ### Initial Migration
 
 ```bash
 cd packages/db
-npx prisma migrate dev --name init
+npm run db:generate  # Generate migration from schema
+npm run db:migrate   # Apply migration to database
 ```
 
 Creates initial database schema and migration files.
@@ -249,36 +262,59 @@ When schema changes:
 
 ```bash
 cd packages/db
-npx prisma migrate dev --name
+npm run db:generate  # Generate new migration
+npm run db:migrate   # Apply to database
+```
+
+### Development Workflow
+
+For rapid iteration (skips migrations):
+
+```bash
+cd packages/db
+npm run db:push  # Push schema directly to DB
 ```
 
 ## Data Types
 
 ### Monetary Values
 
-Use **Decimal** type via Prisma:
+Stored as **TEXT** in SQLite via Drizzle:
 
-- Precise decimal arithmetic
-- No floating-point errors
-- SQLite stores as TEXT internally
-- JavaScript uses `Decimal` from decimal.js
+- SQLite TEXT type provides exact decimal precision
+- Avoids floating-point errors
+- Application handles conversion to/from string
+- Use `Decimal` from `decimal.js` for calculations
 
 ```typescript
-import { Decimal } from '@prisma/client/runtime';
+import { Decimal } from 'decimal.js';
 
+// When inserting
 const amount = new Decimal('123.45');
+await db.insert(transactions).values({ amount: amount.toString() });
+
+// When reading
+const result = await db.select().from(transactions);
+const amount = new Decimal(result[0].amount);
 ```
 
 ### Dates
 
-Use **DateTime** type via Prisma:
+Stored as **INTEGER** (Unix timestamp) via Drizzle:
 
-- Stored as ISO 8601 strings in SQLite
-- JavaScript Date objects in application
-- Timezone-aware (store in UTC, convert for display)
+- SQLite stores as seconds since epoch
+- Drizzle's `timestamp` mode converts to/from JavaScript Date
+- Application works with Date objects
+- Store in UTC, convert for display
 
 ```typescript
+// Drizzle handles conversion automatically
 const transactionDate = new Date('2025-11-22T10:30:00Z');
+await db.insert(transactions).values({ date: transactionDate });
+
+// Reads as Date object
+const result = await db.select().from(transactions);
+const date = result[0].date; // Date object
 ```
 
 ### Currency Codes
@@ -331,64 +367,81 @@ function generateExternalId(transaction: ParsedTransaction): string {
 **Get all transactions for an account**:
 
 ```typescript
-const transactions = await db.transaction.findMany({
-  where: { accountId: 'LT000000000000000004' },
-  orderBy: { date: 'desc' },
-});
+import { eq, desc } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+
+const results = await db
+  .select()
+  .from(transactions)
+  .where(eq(transactions.accountId, 'LT000000000000000004'))
+  .orderBy(desc(transactions.date));
 ```
 
 **Get transactions in date range**:
 
 ```typescript
-const transactions = await db.transaction.findMany({
-  where: {
-    date: {
-      gte: new Date('2025-01-01'),
-      lte: new Date('2025-12-31'),
-    },
-  },
-  orderBy: { date: 'desc' },
-});
+import { and, gte, lte, desc } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+
+const results = await db
+  .select()
+  .from(transactions)
+  .where(
+    and(
+      gte(transactions.date, new Date('2025-01-01')),
+      lte(transactions.date, new Date('2025-12-31'))
+    )
+  )
+  .orderBy(desc(transactions.date));
 ```
 
 **Get current balance for account**:
 
 ```typescript
-const latestTransaction = await db.transaction.findFirst({
-  where: { accountId: 'LT000000000000000004' },
-  orderBy: { date: 'desc' },
-  select: { balance: true },
-});
+import { eq, desc } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+
+const [result] = await db
+  .select({ balance: transactions.balance })
+  .from(transactions)
+  .where(eq(transactions.accountId, 'LT000000000000000004'))
+  .orderBy(desc(transactions.date))
+  .limit(1);
 ```
 
 **Search by merchant**:
 
 ```typescript
-const transactions = await db.transaction.findMany({
-  where: {
-    merchant: {
-      contains: 'Amazon',
-      mode: 'insensitive',
-    },
-  },
-});
+import { like } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+
+const results = await db
+  .select()
+  .from(transactions)
+  .where(like(transactions.merchant, '%Amazon%'));
 ```
 
 **Spending by category**:
 
 ```typescript
-const spending = await db.transaction.groupBy({
-  by: ['category'],
-  where: {
-    type: 'debit',
-    date: {
-      gte: new Date('2025-11-01'),
-      lte: new Date('2025-11-30'),
-    },
-  },
-  _sum: { amount: true },
-  _count: true,
-});
+import { and, eq, gte, lte, sum, count } from 'drizzle-orm';
+import { transactions } from '@nodm/financier-db';
+
+const spending = await db
+  .select({
+    category: transactions.category,
+    totalAmount: sum(transactions.amount),
+    transactionCount: count(),
+  })
+  .from(transactions)
+  .where(
+    and(
+      eq(transactions.type, 'debit'),
+      gte(transactions.date, new Date('2025-11-01')),
+      lte(transactions.date, new Date('2025-11-30'))
+    )
+  )
+  .groupBy(transactions.category);
 ```
 
 ## Data Validation
@@ -407,13 +460,14 @@ function validateTransaction(data: unknown) {
 
 ### At Query Time
 
-Prisma provides runtime type safety:
+Drizzle provides full TypeScript inference:
 
 ```typescript
-// TypeScript knows the shape of Transaction
-const transaction: Transaction = await db.transaction.findUnique({
-  where: { id: 'some-uuid' },
-});
+// TypeScript infers the exact shape
+const [transaction] = await db
+  .select()
+  .from(transactions)
+  .where(eq(transactions.id, 'some-uuid'));
 ```
 
 ## Performance Considerations
@@ -432,11 +486,13 @@ Current indexes optimize for:
 For importing large CSVs:
 
 ```typescript
+import { transactions } from '@nodm/financier-db';
+
 // Insert in batches of 1000
-await db.transaction.createMany({
-  data: transactions,
-  skipDuplicates: true, // Skip duplicates instead of erroring
-});
+await db
+  .insert(transactions)
+  .values(transactionArray)
+  .onConflictDoNothing(); // Skip duplicates
 ```
 
 ### Query Limits
@@ -444,10 +500,13 @@ await db.transaction.createMany({
 Always use pagination for large result sets:
 
 ```typescript
-const transactions = await db.transaction.findMany({
-  take: 100, // Limit
-  skip: 0, // Offset
-});
+import { transactions } from '@nodm/financier-db';
+
+const results = await db
+  .select()
+  .from(transactions)
+  .limit(100)
+  .offset(0);
 ```
 
 ## Future Schema Extensions

@@ -50,11 +50,11 @@ financier/
 
 #### @nodm/financier-db
 
-- Prisma schema and migrations
-- Database client configuration
+- Drizzle schema and client
+- Database migrations via Drizzle Kit
 - Database utility functions
 - **Published**: Yes (public npm)
-- **Dependencies**: @prisma/client, @nodm/financier-types
+- **Dependencies**: drizzle-orm, better-sqlite3, @nodm/financier-types
 
 #### @nodm/financier-importer
 
@@ -80,7 +80,7 @@ financier/
 - **Language**: TypeScript (ES2023)
 - **Monorepo**: nx
 - **Database**: SQLite (local file at `~/.financier/data.db`)
-- **ORM**: Prisma
+- **ORM**: Drizzle ORM
 - **Validation**: Zod
 
 ### Libraries
