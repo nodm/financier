@@ -1,45 +1,47 @@
-import { getDatabaseClient } from "@nodm/financier-db";
+import { randomUUID } from "node:crypto";
+import {
+  accounts,
+  disconnectDatabase,
+  getDatabaseClient,
+  transactions,
+} from "@nodm/financier-db";
 import type { RawTransactionData } from "@nodm/financier-types";
+import { eq } from "drizzle-orm";
 import {
   filterDuplicates,
   isDuplicate,
 } from "../../src/services/duplicate-detector.js";
 
 describe("duplicate-detector", () => {
-  const prisma = getDatabaseClient();
+  const db = getDatabaseClient();
   const testAccountId = "LT999999999999999999";
 
   beforeEach(async () => {
     // Clean up test data
-    await prisma.transaction.deleteMany({
-      where: { accountId: testAccountId },
-    });
-    await prisma.account.deleteMany({
-      where: { id: testAccountId },
-    });
+    await db
+      .delete(transactions)
+      .where(eq(transactions.accountId, testAccountId));
+    await db.delete(accounts).where(eq(accounts.id, testAccountId));
 
     // Create test account
-    await prisma.account.create({
-      data: {
-        id: testAccountId,
-        name: "Test Account",
-        currency: "EUR",
-        bankCode: "SEB",
-      },
+    await db.insert(accounts).values({
+      id: testAccountId,
+      name: "Test Account",
+      currency: "EUR",
+      bankCode: "SEB",
+      updatedAt: new Date(),
     });
   });
 
   afterEach(async () => {
-    await prisma.transaction.deleteMany({
-      where: { accountId: testAccountId },
-    });
-    await prisma.account.deleteMany({
-      where: { id: testAccountId },
-    });
+    await db
+      .delete(transactions)
+      .where(eq(transactions.accountId, testAccountId));
+    await db.delete(accounts).where(eq(accounts.id, testAccountId));
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    await disconnectDatabase();
   });
 
   describe("isDuplicate", () => {
@@ -51,24 +53,24 @@ describe("duplicate-detector", () => {
         currency: "EUR",
       };
 
-      const result = await isDuplicate(prisma, transaction, testAccountId);
+      const result = await isDuplicate(db, transaction, testAccountId);
 
       expect(result).toBe(false);
     });
 
     it("should return true for existing transaction", async () => {
       // Insert transaction
-      await prisma.transaction.create({
-        data: {
-          accountId: testAccountId,
-          externalId: "TEST001",
-          date: new Date("2025-01-15"),
-          amount: 100,
-          currency: "EUR",
-          description: "",
-          type: "CREDIT",
-          source: "SEB",
-        },
+      await db.insert(transactions).values({
+        id: randomUUID(),
+        accountId: testAccountId,
+        externalId: "TEST001",
+        date: new Date("2025-01-15"),
+        amount: "100",
+        currency: "EUR",
+        description: "",
+        type: "CREDIT",
+        source: "SEB",
+        updatedAt: new Date(),
       });
 
       const transaction: RawTransactionData = {
@@ -78,23 +80,23 @@ describe("duplicate-detector", () => {
         currency: "EUR",
       };
 
-      const result = await isDuplicate(prisma, transaction, testAccountId);
+      const result = await isDuplicate(db, transaction, testAccountId);
 
       expect(result).toBe(true);
     });
 
     it("should not match transaction with different external ID", async () => {
-      await prisma.transaction.create({
-        data: {
-          accountId: testAccountId,
-          externalId: "TEST001",
-          date: new Date("2025-01-15"),
-          amount: 100,
-          currency: "EUR",
-          description: "",
-          type: "CREDIT",
-          source: "SEB",
-        },
+      await db.insert(transactions).values({
+        id: randomUUID(),
+        accountId: testAccountId,
+        externalId: "TEST001",
+        date: new Date("2025-01-15"),
+        amount: "100",
+        currency: "EUR",
+        description: "",
+        type: "CREDIT",
+        source: "SEB",
+        updatedAt: new Date(),
       });
 
       const transaction: RawTransactionData = {
@@ -104,7 +106,7 @@ describe("duplicate-detector", () => {
         currency: "EUR",
       };
 
-      const result = await isDuplicate(prisma, transaction, testAccountId);
+      const result = await isDuplicate(db, transaction, testAccountId);
 
       expect(result).toBe(false);
     });
@@ -113,20 +115,20 @@ describe("duplicate-detector", () => {
   describe("filterDuplicates", () => {
     it("should filter out duplicate transactions", async () => {
       // Insert one transaction
-      await prisma.transaction.create({
-        data: {
-          accountId: testAccountId,
-          externalId: "TEST001",
-          date: new Date("2025-01-15"),
-          amount: 100,
-          currency: "EUR",
-          description: "",
-          type: "CREDIT",
-          source: "SEB",
-        },
+      await db.insert(transactions).values({
+        id: randomUUID(),
+        accountId: testAccountId,
+        externalId: "TEST001",
+        date: new Date("2025-01-15"),
+        amount: "100",
+        currency: "EUR",
+        description: "",
+        type: "CREDIT",
+        source: "SEB",
+        updatedAt: new Date(),
       });
 
-      const transactions: Array<RawTransactionData> = [
+      const testTransactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -142,8 +144,8 @@ describe("duplicate-detector", () => {
       ];
 
       const result = await filterDuplicates(
-        prisma,
-        transactions,
+        db,
+        testTransactions,
         testAccountId
       );
 
@@ -154,7 +156,7 @@ describe("duplicate-detector", () => {
     });
 
     it("should return all transactions if none are duplicates", async () => {
-      const transactions: Array<RawTransactionData> = [
+      const testTransactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -170,8 +172,8 @@ describe("duplicate-detector", () => {
       ];
 
       const result = await filterDuplicates(
-        prisma,
-        transactions,
+        db,
+        testTransactions,
         testAccountId
       );
 
@@ -180,32 +182,34 @@ describe("duplicate-detector", () => {
     });
 
     it("should return empty array if all are duplicates", async () => {
-      await prisma.transaction.createMany({
-        data: [
-          {
-            accountId: testAccountId,
-            externalId: "TEST001",
-            date: new Date("2025-01-15"),
-            amount: 100,
-            currency: "EUR",
-            description: "",
-            type: "CREDIT",
-            source: "SEB",
-          },
-          {
-            accountId: testAccountId,
-            externalId: "TEST002",
-            date: new Date("2025-01-16"),
-            amount: 200,
-            currency: "EUR",
-            description: "",
-            type: "CREDIT",
-            source: "SEB",
-          },
-        ],
-      });
+      await db.insert(transactions).values([
+        {
+          id: randomUUID(),
+          accountId: testAccountId,
+          externalId: "TEST001",
+          date: new Date("2025-01-15"),
+          amount: "100",
+          currency: "EUR",
+          description: "",
+          type: "CREDIT",
+          source: "SEB",
+          updatedAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          accountId: testAccountId,
+          externalId: "TEST002",
+          date: new Date("2025-01-16"),
+          amount: "200",
+          currency: "EUR",
+          description: "",
+          type: "CREDIT",
+          source: "SEB",
+          updatedAt: new Date(),
+        },
+      ]);
 
-      const transactions: Array<RawTransactionData> = [
+      const testTransactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -221,8 +225,8 @@ describe("duplicate-detector", () => {
       ];
 
       const result = await filterDuplicates(
-        prisma,
-        transactions,
+        db,
+        testTransactions,
         testAccountId
       );
 

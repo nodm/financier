@@ -1,11 +1,11 @@
-import type { Currency } from './currency.js';
+import type { Currency } from "./currency.js";
 
 /**
  * Transaction type
  */
 export enum TransactionType {
-  DEBIT = 'DEBIT',
-  CREDIT = 'CREDIT',
+  DEBIT = "DEBIT",
+  CREDIT = "CREDIT",
 }
 
 /**

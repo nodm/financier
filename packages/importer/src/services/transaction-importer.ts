@@ -1,8 +1,14 @@
-import crypto from 'node:crypto';
-import { getDatabaseClient, type PrismaClient } from '@nodm/financier-db';
-import { type ImportResult, TransactionType } from '@nodm/financier-types';
-import { getParser } from '../parsers/parser-factory.js';
-import { filterDuplicates } from './duplicate-detector.js';
+import crypto from "node:crypto";
+import {
+  accounts,
+  disconnectDatabase,
+  getDatabaseClient,
+  transactions as transactionsTable,
+} from "@nodm/financier-db";
+import { type ImportResult, TransactionType } from "@nodm/financier-types";
+import { eq } from "drizzle-orm";
+import { getParser } from "../parsers/parser-factory.js";
+import { filterDuplicates } from "./duplicate-detector.js";
 
 export interface ImportOptions {
   dryRun?: boolean;
@@ -34,9 +40,8 @@ export async function importCSV(
   }
 
   // Parse CSV
-  const { accountId: parsedAccountId, transactions } = await parser.parse(
-    filePath
-  );
+  const { accountId: parsedAccountId, transactions } =
+    await parser.parse(filePath);
   const accountId = overrideAccountId || parsedAccountId;
 
   if (verbose) {
@@ -56,13 +61,13 @@ export async function importCSV(
   }
 
   // Connect to database (needed for both dry-run and actual import to check duplicates)
-  const prisma = getDatabaseClient();
+  const db = getDatabaseClient();
 
   try {
     // Ensure all accounts exist (skip in dry-run mode)
     if (!dryRun) {
       for (const accId of accountIds) {
-        await ensureAccount(prisma, accId, parser.bankCode);
+        await ensureAccount(db, accId, parser.bankCode);
       }
     }
 
@@ -72,7 +77,7 @@ export async function importCSV(
 
     // Filter duplicates
     const { newTransactions, duplicateTransactions } = await filterDuplicates(
-      prisma,
+      db,
       transactions,
       accountId
     );
@@ -81,7 +86,7 @@ export async function importCSV(
     if (verbose) {
       console.log(`[INFO] Found ${duplicates} duplicates`);
       console.log(
-        `[INFO] ${dryRun ? 'Would import' : 'Importing'} ${
+        `[INFO] ${dryRun ? "Would import" : "Importing"} ${
           newTransactions.length
         } new transactions`
       );
@@ -106,10 +111,10 @@ export async function importCSV(
 
     // Insert transactions
     if (newTransactions.length > 0) {
-      await prisma.transaction.createMany({
-        data: newTransactions.map((t) => {
+      await db.insert(transactionsTable).values(
+        newTransactions.map((t) => {
           const amount =
-            typeof t.amount === 'string'
+            typeof t.amount === "string"
               ? Number.parseFloat(t.amount)
               : t.amount;
           const type =
@@ -122,24 +127,25 @@ export async function importCSV(
             accountId: targetAccountId,
             counterpartyAccountId: null,
             externalId: t.externalId,
-            date: typeof t.date === 'string' ? new Date(t.date) : t.date,
-            amount,
-            currency: typeof t.currency === 'string' ? t.currency : t.currency,
+            date: typeof t.date === "string" ? new Date(t.date) : t.date,
+            amount: amount.toString(),
+            currency: typeof t.currency === "string" ? t.currency : t.currency,
             originalAmount: null,
             originalCurrency: null,
             merchant: t.merchant || null,
-            description: t.description || '',
+            description: t.description || "",
             category: t.category || null,
             type,
             balance: t.balance
-              ? typeof t.balance === 'string'
-                ? Number.parseFloat(t.balance)
-                : t.balance
+              ? typeof t.balance === "string"
+                ? t.balance
+                : t.balance.toString()
               : null,
             source: parser.bankCode,
+            updatedAt: new Date(),
           };
-        }),
-      });
+        })
+      );
     }
 
     return {
@@ -155,27 +161,28 @@ export async function importCSV(
       duplicateTransactions: showDuplicates ? duplicateTransactions : undefined,
     };
   } finally {
-    await prisma.$disconnect();
+    await disconnectDatabase();
   }
 }
 
 async function ensureAccount(
-  prisma: PrismaClient,
+  db: ReturnType<typeof getDatabaseClient>,
   accountId: string,
   bankCode: string
 ): Promise<void> {
-  const existing = await prisma.account.findUnique({
-    where: { id: accountId },
-  });
+  const [existing] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.id, accountId))
+    .limit(1);
 
   if (!existing) {
-    await prisma.account.create({
-      data: {
-        id: accountId,
-        name: `Account ${accountId.slice(-4)}`,
-        currency: 'EUR',
-        bankCode,
-      },
+    await db.insert(accounts).values({
+      id: accountId,
+      name: `Account ${accountId.slice(-4)}`,
+      currency: "EUR",
+      bankCode,
+      updatedAt: new Date(),
     });
   }
 }
