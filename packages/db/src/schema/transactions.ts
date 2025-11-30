@@ -41,22 +41,19 @@ export const transactions = sqliteTable(
       .notNull()
       .$onUpdate(() => new Date()),
   },
-  (table) => ({
-    accountIdIdx: index("transactions_accountId_idx").on(table.accountId),
-    counterpartyIdx: index("transactions_counterpartyAccountId_idx").on(
+  (table) => [
+    index("transactions_accountId_idx").on(table.accountId),
+    index("transactions_counterpartyAccountId_idx").on(
       table.counterpartyAccountId
     ),
-    accountDateIdx: index("transactions_accountId_date_idx").on(
-      table.accountId,
-      table.date
-    ),
-    dateIdx: index("transactions_date_idx").on(table.date),
-    merchantIdx: index("transactions_merchant_idx").on(table.merchant),
-    categoryIdx: index("transactions_category_idx").on(table.category),
-    uniqueConstraint: unique("transactions_accountId_date_externalId_key").on(
+    index("transactions_accountId_date_idx").on(table.accountId, table.date),
+    index("transactions_date_idx").on(table.date),
+    index("transactions_merchant_idx").on(table.merchant),
+    index("transactions_category_idx").on(table.category),
+    unique("transactions_accountId_date_externalId_key").on(
       table.accountId,
       table.date,
       table.externalId
     ),
-  })
+  ]
 );

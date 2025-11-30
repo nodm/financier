@@ -21,7 +21,5 @@ export const accounts = sqliteTable(
       .notNull()
       .$onUpdate(() => new Date()),
   },
-  (table) => ({
-    bankCodeIdx: index("accounts_bankCode_idx").on(table.bankCode),
-  })
+  (table) => [index("accounts_bankCode_idx").on(table.bankCode)]
 );
