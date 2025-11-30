@@ -2,12 +2,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
+import { sql } from "drizzle-orm";
 import {
   disconnectDatabase,
   getDatabaseClient,
   resetDatabaseClient,
 } from "../src/lib/client.js";
 import { initializeDatabase } from "../src/lib/utils.js";
+import { setupTestDatabase } from "./helpers/setup-test-db.js";
 
 describe("Database Integration", () => {
   let testDir: string;
@@ -18,6 +20,7 @@ describe("Database Integration", () => {
     originalEnv = process.env.DATABASE_URL;
     process.env.DATABASE_URL = `file:${join(testDir, "test.db")}`;
     await initializeDatabase();
+    setupTestDatabase();
   });
 
   afterAll(async () => {
@@ -35,10 +38,10 @@ describe("Database Integration", () => {
     const client = getDatabaseClient();
 
     // Act
-    const result = await client.$queryRaw`SELECT 1 as value`;
+    const result = client.get<{ value: number }>(sql`SELECT 1 as value`);
 
-    // Assert - SQLite returns BigInt for integers
-    expect(result).toEqual([{ value: 1n }]);
+    // Assert
+    expect(result).toEqual({ value: 1 });
   });
 
   it("should allow executing raw queries", async () => {
@@ -46,17 +49,18 @@ describe("Database Integration", () => {
     const client = getDatabaseClient();
 
     // Act
-    const result = await client.$queryRaw`SELECT sqlite_version() as version`;
+    const result = client.get<{ version: string }>(
+      sql`SELECT sqlite_version() as version`
+    );
 
     // Assert
-    expect(result).toHaveLength(1);
-    expect(result[0]).toHaveProperty("version");
+    expect(result).toHaveProperty("version");
   });
 
   it("should properly disconnect after executing queries", async () => {
     // Arrange
     const client = getDatabaseClient();
-    await client.$queryRaw`SELECT 1`;
+    client.run(sql`SELECT 1`);
 
     // Act
     await disconnectDatabase();
