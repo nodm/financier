@@ -8,12 +8,23 @@ import * as schema from "../schema/index.js";
 import { getDatabasePath } from "./utils.js";
 
 // Handle ESM/CJS interop - better-sqlite3 is a CommonJS module
+// Tested with better-sqlite3@7.x - may need adjustment for different versions
 type BetterSqlite3Type = typeof import("better-sqlite3");
 const Database = (
   "default" in BetterSqlite3Module
     ? (BetterSqlite3Module as { default: BetterSqlite3Type }).default
     : BetterSqlite3Module
 ) as BetterSqlite3Type;
+
+// Runtime check: ensure Database is a constructor function
+if (typeof Database !== "function") {
+  throw new Error(
+    "better-sqlite3 Database constructor not found. " +
+      "Check the module export structure and version compatibility. " +
+      "Tested with better-sqlite3@7.x. " +
+      "If you recently upgraded better-sqlite3, update the ESM/CJS interop logic."
+  );
+}
 
 let db: BetterSQLite3Database<typeof schema> | null = null;
 let sqliteClient: ReturnType<typeof Database> | null = null;
@@ -42,12 +53,8 @@ export function getDatabaseClient(): BetterSQLite3Database<typeof schema> {
 
       db = drizzle(sqliteClient, { schema });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? `Failed to initialize database client: ${error.message}`
-          : "Failed to initialize database client";
       throw new DatabaseError(
-        errorMessage,
+        "Failed to initialize database client",
         error instanceof Error ? error : undefined
       );
     }

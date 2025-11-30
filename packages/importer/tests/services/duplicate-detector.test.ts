@@ -3,7 +3,7 @@ import {
   accounts,
   disconnectDatabase,
   getDatabaseClient,
-  transactions,
+  transactions as transactionsTable,
 } from "@nodm/financier-db";
 import type { RawTransactionData } from "@nodm/financier-types";
 import { eq } from "drizzle-orm";
@@ -19,8 +19,8 @@ describe("duplicate-detector", () => {
   beforeEach(async () => {
     // Clean up test data
     await db
-      .delete(transactions)
-      .where(eq(transactions.accountId, testAccountId));
+      .delete(transactionsTable)
+      .where(eq(transactionsTable.accountId, testAccountId));
     await db.delete(accounts).where(eq(accounts.id, testAccountId));
 
     // Create test account
@@ -35,8 +35,8 @@ describe("duplicate-detector", () => {
 
   afterEach(async () => {
     await db
-      .delete(transactions)
-      .where(eq(transactions.accountId, testAccountId));
+      .delete(transactionsTable)
+      .where(eq(transactionsTable.accountId, testAccountId));
     await db.delete(accounts).where(eq(accounts.id, testAccountId));
   });
 
@@ -60,7 +60,7 @@ describe("duplicate-detector", () => {
 
     it("should return true for existing transaction", async () => {
       // Insert transaction
-      await db.insert(transactions).values({
+      await db.insert(transactionsTable).values({
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
@@ -86,7 +86,7 @@ describe("duplicate-detector", () => {
     });
 
     it("should not match transaction with different external ID", async () => {
-      await db.insert(transactions).values({
+      await db.insert(transactionsTable).values({
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
@@ -115,7 +115,7 @@ describe("duplicate-detector", () => {
   describe("filterDuplicates", () => {
     it("should filter out duplicate transactions", async () => {
       // Insert one transaction
-      await db.insert(transactions).values({
+      await db.insert(transactionsTable).values({
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
@@ -128,7 +128,7 @@ describe("duplicate-detector", () => {
         updatedAt: new Date(),
       });
 
-      const testTransactions: Array<RawTransactionData> = [
+      const transactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -143,11 +143,7 @@ describe("duplicate-detector", () => {
         },
       ];
 
-      const result = await filterDuplicates(
-        db,
-        testTransactions,
-        testAccountId
-      );
+      const result = await filterDuplicates(db, transactions, testAccountId);
 
       expect(result.newTransactions).toHaveLength(1);
       expect(result.newTransactions[0].externalId).toBe("TEST002");
@@ -156,7 +152,7 @@ describe("duplicate-detector", () => {
     });
 
     it("should return all transactions if none are duplicates", async () => {
-      const testTransactions: Array<RawTransactionData> = [
+      const transactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -171,18 +167,14 @@ describe("duplicate-detector", () => {
         },
       ];
 
-      const result = await filterDuplicates(
-        db,
-        testTransactions,
-        testAccountId
-      );
+      const result = await filterDuplicates(db, transactions, testAccountId);
 
       expect(result.newTransactions).toHaveLength(2);
       expect(result.duplicateTransactions).toHaveLength(0);
     });
 
     it("should return empty array if all are duplicates", async () => {
-      await db.insert(transactions).values([
+      await db.insert(transactionsTable).values([
         {
           id: randomUUID(),
           accountId: testAccountId,
@@ -209,7 +201,7 @@ describe("duplicate-detector", () => {
         },
       ]);
 
-      const testTransactions: Array<RawTransactionData> = [
+      const transactions: Array<RawTransactionData> = [
         {
           externalId: "TEST001",
           date: new Date("2025-01-15"),
@@ -224,11 +216,7 @@ describe("duplicate-detector", () => {
         },
       ];
 
-      const result = await filterDuplicates(
-        db,
-        testTransactions,
-        testAccountId
-      );
+      const result = await filterDuplicates(db, transactions, testAccountId);
 
       expect(result.newTransactions).toHaveLength(0);
       expect(result.duplicateTransactions).toHaveLength(2);

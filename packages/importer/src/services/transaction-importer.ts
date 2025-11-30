@@ -8,6 +8,7 @@ import {
 import { type ImportResult, TransactionType } from "@nodm/financier-types";
 import { eq } from "drizzle-orm";
 import { getParser } from "../parsers/parser-factory.js";
+import { normalizeDate } from "../utils/date-utils.js";
 import { filterDuplicates } from "./duplicate-detector.js";
 
 export interface ImportOptions {
@@ -127,7 +128,8 @@ export async function importCSV(
             accountId: targetAccountId,
             counterpartyAccountId: null,
             externalId: t.externalId,
-            date: typeof t.date === "string" ? new Date(t.date) : t.date,
+            date: normalizeDate(t.date),
+            // Amount stored as string for decimal precision (avoid floating-point errors)
             amount: amount.toString(),
             currency: typeof t.currency === "string" ? t.currency : t.currency,
             originalAmount: null,
