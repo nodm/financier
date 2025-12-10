@@ -202,20 +202,31 @@ release/v<version>
 
 ## Implementation Phases
 
-**Current Phase**: 0 (Project initialization complete, ready for Phase 1)
+**Current Phase**: 5 (Importer Complete) - Ready for Phase 6 (MCP Core Infrastructure)
+
+**Completed Phases**:
+- ✅ Phase 0: Project Initialization
+- ✅ Phase 1: Types Package
+- ✅ Phase 1.5: Configuration Package
+- ✅ Phase 2: Database Package
+- ✅ Phase 3: Importer Infrastructure
+- 🟡 Phase 4: Bank Parsers (SEB Lithuania complete, 3 more banks pending CSV samples)
+- ✅ Phase 5: Importer Logic
+
+**Next Phase**: Phase 6 - MCP Server Core Infrastructure
 
 **Phase Order**:
-1. Phase 1: Types Package (foundation)
-2. Phase 1.5: Configuration Package
-3. Phase 2: Database Package
-4. Phase 3: Importer Infrastructure
-5. Phase 4: Bank Parsers (BLOCKED - awaiting CSV samples)
-6. Phase 5: Importer Logic
-7. Phase 6: MCP Core
+1. Phase 1: Types Package (foundation) ✅
+2. Phase 1.5: Configuration Package ✅
+3. Phase 2: Database Package ✅
+4. Phase 3: Importer Infrastructure ✅
+5. Phase 4: Bank Parsers (SEB Lithuania ✅, 3 more pending CSV samples)
+6. Phase 5: Importer Logic ✅
+7. Phase 6: MCP Core (Next)
 8. Phase 7: MCP Tools
 9. Phase 8: Integration Testing
 
-**Critical**: Follow phases sequentially. Phase 4 blocked until user provides 4 bank CSV samples.
+**Note**: Phase 4 (remaining bank parsers) can be completed in parallel with Phase 6-7 once CSV samples are provided.
 
 See `docs/06-implementation-plan.md` for detailed tasks per phase.
 
@@ -313,14 +324,16 @@ Update docs when architecture, schema, or APIs change.
 ## Special Notes
 
 ### Bank Parsers (Phase 4)
-BLOCKED until user provides 4 CSV samples. Each bank needs:
+**Status**: SEB Lithuania parser complete ✅. 3 more banks pending CSV samples.
+
+For remaining banks, each needs:
 1. Anonymized CSV sample in `samples/`
 2. Header pattern analysis
 3. Custom parser implementation
 4. Field mapping logic
 5. Tests with fixtures
 
-Do not proceed with Phase 4 without CSV samples.
+Remaining bank parsers can be implemented in parallel with Phase 6-7 once CSV samples are provided.
 
 ### MCP Server
 - v1 is read-only (query operations only)
@@ -330,9 +343,10 @@ Do not proceed with Phase 4 without CSV samples.
 
 ### Importer CLI
 - Detects bank format from CSV headers
-- Handles multi-account CSVs
+- Handles multi-account CSVs (SEB Lithuania format supported)
 - Duplicate detection via (externalId, accountId, date)
 - Validates using Zod schemas
+- Currently supports: SEB Lithuania (3 more banks pending CSV samples)
 
 ## Troubleshooting
 
