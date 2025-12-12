@@ -55,7 +55,7 @@ export interface Transaction {
   /** Transaction category */
   category: TransactionCategory;
 
-  /** Transaction type (debit/credit/transfer) */
+  /** Transaction type (debit/credit) */
   type: TransactionType;
 
   /** Account balance after transaction (optional) */
