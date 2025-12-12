@@ -1,8 +1,8 @@
 import type {
   GetStatisticsInput,
   GetStatisticsOutput,
-} from "@nodm/financier-types";
-import { validateGetStatisticsInput } from "@nodm/financier-types";
+} from "../types/mcp.js";
+import { validateGetStatisticsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { StatisticsService } from "../services/statistics-service.js";
 

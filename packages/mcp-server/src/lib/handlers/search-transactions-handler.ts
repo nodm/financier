@@ -1,8 +1,8 @@
 import type {
   SearchTransactionsInput,
   SearchTransactionsOutput,
-} from "@nodm/financier-types";
-import { validateSearchTransactionsInput } from "@nodm/financier-types";
+} from "../types/mcp.js";
+import { validateSearchTransactionsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { TransactionService } from "../services/transaction-service.js";
 

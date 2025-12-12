@@ -1,7 +1,7 @@
 import type {
   GetStatisticsInput,
   GroupedData,
-} from "@nodm/financier-types";
+} from "../types/mcp.js";
 import { getDatabaseClient, transactions } from "@nodm/financier-db";
 import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";

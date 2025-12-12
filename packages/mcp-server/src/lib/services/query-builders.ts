@@ -1,4 +1,4 @@
-import type { QueryTransactionsInput } from "@nodm/financier-types";
+import type { QueryTransactionsInput } from "../types/mcp.js";
 import { transactions } from "@nodm/financier-db";
 import { and, asc, desc, eq, gte, lte, like, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";

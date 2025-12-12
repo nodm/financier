@@ -1,5 +1,5 @@
-import type { GetAccountsInput, GetAccountsOutput } from "@nodm/financier-types";
-import { validateGetAccountsInput } from "@nodm/financier-types";
+import type { GetAccountsInput, GetAccountsOutput } from "../types/mcp.js";
+import { validateGetAccountsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { AccountService } from "../services/account-service.js";
 

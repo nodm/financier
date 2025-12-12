@@ -1,5 +1,4 @@
-import type { Account } from "./account.js";
-import type { Transaction } from "./transaction.js";
+import type { Account, Transaction } from "@nodm/financier-types";
 
 /**
  * Input for query_transactions tool

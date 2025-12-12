@@ -1,8 +1,8 @@
+import type { Account } from "@nodm/financier-types";
 import type {
-  Account,
   AccountWithSummary,
   GetAccountsInput,
-} from "@nodm/financier-types";
+} from "../types/mcp.js";
 import { accounts, getDatabaseClient, transactions } from "@nodm/financier-db";
 import { count, desc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";

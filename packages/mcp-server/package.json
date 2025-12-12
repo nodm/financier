@@ -25,6 +25,7 @@
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@nodm/financier-db": "workspace:*",
     "@nodm/financier-types": "workspace:*",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zod": "^4.1.12"
   }
 }

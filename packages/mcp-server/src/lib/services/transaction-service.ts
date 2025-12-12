@@ -1,8 +1,6 @@
-import type {
-  QueryTransactionsInput,
-  Transaction,
-} from "@nodm/financier-types";
+import type { Transaction } from "@nodm/financier-types";
 import { TransactionType } from "@nodm/financier-types";
+import type { QueryTransactionsInput } from "../types/mcp.js";
 import { getDatabaseClient, transactions } from "@nodm/financier-db";
 import { and, count, desc, eq, like, or } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";

@@ -4,7 +4,7 @@ import type {
   GetStatisticsInput,
   QueryTransactionsInput,
   SearchTransactionsInput,
-} from "../types/mcp.js";
+} from "./mcp.js";
 
 /**
  * Zod schema for query_transactions input

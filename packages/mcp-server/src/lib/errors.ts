@@ -3,7 +3,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "@nodm/financier-types";
-import type { ErrorResponse } from "@nodm/financier-types";
+import type { ErrorResponse } from "./types/mcp.js";
 
 /**
  * Format error for MCP response
