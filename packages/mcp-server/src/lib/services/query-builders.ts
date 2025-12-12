@@ -1,6 +1,6 @@
 import type { QueryTransactionsInput } from "../types/mcp.js";
 import { transactions } from "@nodm/financier-db";
-import { and, asc, desc, eq, gte, lte, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, like, lt, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { parseDate } from "../utils/date-utils.js";
 
@@ -19,10 +19,10 @@ export function buildTransactionWhereConditions(
   }
   if (input.dateTo) {
     const dateTo = parseDate(input.dateTo);
-    // Add one day to include the entire end date
+    // Add one day to include the entire end date, then use lt to exclude the next day
     const dateToEnd = new Date(dateTo);
     dateToEnd.setUTCDate(dateToEnd.getUTCDate() + 1);
-    conditions.push(lte(transactions.date, dateToEnd));
+    conditions.push(lt(transactions.date, dateToEnd));
   }
 
   // Account filter

@@ -3,7 +3,7 @@ import type {
   GroupedData,
 } from "../types/mcp.js";
 import { getDatabaseClient, transactions } from "@nodm/financier-db";
-import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as schema from "@nodm/financier-db/schema";
 import { parseDate } from "../utils/date-utils.js";
@@ -27,13 +27,13 @@ export class StatisticsService {
   }> {
     const dateFrom = parseDate(input.dateFrom);
     const dateTo = parseDate(input.dateTo);
-    // Add one day to include the entire end date
+    // Add one day to include the entire end date, then use lt to exclude the next day
     const dateToEnd = new Date(dateTo);
     dateToEnd.setUTCDate(dateToEnd.getUTCDate() + 1);
 
     const conditions = [
       gte(transactions.date, dateFrom),
-      lte(transactions.date, dateToEnd),
+      lt(transactions.date, dateToEnd),
     ];
 
     if (input.accountId) {
