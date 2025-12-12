@@ -11,8 +11,14 @@ import type {
  */
 export const queryTransactionsInputSchema = z
   .object({
-    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    dateFrom: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    dateTo: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     accountId: z.string().optional(),
     category: z.string().optional(),
     type: z.enum(["debit", "credit", "transfer"]).optional(),
@@ -39,10 +45,7 @@ export const queryTransactionsInputSchema = z
   )
   .refine(
     (data) => {
-      if (
-        data.minAmount !== undefined &&
-        data.maxAmount !== undefined
-      ) {
+      if (data.minAmount !== undefined && data.maxAmount !== undefined) {
         return data.minAmount <= data.maxAmount;
       }
       return true;
@@ -109,9 +112,6 @@ export function validateSearchTransactionsInput(
   return searchTransactionsInputSchema.parse(input);
 }
 
-export function validateGetStatisticsInput(
-  input: unknown
-): GetStatisticsInput {
+export function validateGetStatisticsInput(input: unknown): GetStatisticsInput {
   return getStatisticsInputSchema.parse(input);
 }
-

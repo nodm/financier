@@ -1,10 +1,10 @@
+import { getDatabaseClient, transactions } from "@nodm/financier-db";
+import type * as schema from "@nodm/financier-db/schema";
 import type { Transaction } from "@nodm/financier-types";
 import { TransactionType } from "@nodm/financier-types";
-import type { QueryTransactionsInput } from "../types/mcp.js";
-import { getDatabaseClient, transactions } from "@nodm/financier-db";
 import { and, count, desc, eq, like, or } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import type * as schema from "@nodm/financier-db/schema";
+import type { QueryTransactionsInput } from "../types/mcp.js";
 import {
   buildTransactionOrderBy,
   buildTransactionWhereConditions,
@@ -18,9 +18,7 @@ export class TransactionService {
   /**
    * Query transactions with filters
    */
-  async queryTransactions(
-    input: QueryTransactionsInput
-  ): Promise<{
+  async queryTransactions(input: QueryTransactionsInput): Promise<{
     transactions: Transaction[];
     total: number;
     hasMore: boolean;
@@ -40,10 +38,7 @@ export class TransactionService {
         .orderBy(buildTransactionOrderBy(input))
         .limit(limit)
         .offset(offset),
-      this.db
-        .select({ total: count() })
-        .from(transactions)
-        .where(whereClause),
+      this.db.select({ total: count() }).from(transactions).where(whereClause),
     ]);
 
     // Convert database rows to Transaction objects
@@ -93,12 +88,14 @@ export class TransactionService {
     transactions: Transaction[];
     total: number;
   }> {
-    const conditions = [
-      or(
-        like(transactions.description, `%${query}%`),
-        like(transactions.merchant, `%${query}%`)
-      )!,
-    ];
+    const searchCondition = or(
+      like(transactions.description, `%${query}%`),
+      like(transactions.merchant, `%${query}%`)
+    );
+    const conditions = [];
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
 
     if (accountId) {
       conditions.push(eq(transactions.accountId, accountId));
@@ -150,4 +147,3 @@ export class TransactionService {
     };
   }
 }
-

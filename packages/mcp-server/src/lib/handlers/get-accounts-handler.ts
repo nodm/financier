@@ -1,7 +1,7 @@
-import type { GetAccountsInput, GetAccountsOutput } from "../types/mcp.js";
-import { validateGetAccountsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { AccountService } from "../services/account-service.js";
+import type { GetAccountsOutput } from "../types/mcp.js";
+import { validateGetAccountsInput } from "../types/mcp-schemas.js";
 
 export async function handleGetAccounts(
   args: unknown
@@ -25,4 +25,3 @@ export async function handleGetAccounts(
     return formatErrorResponse(error);
   }
 }
-

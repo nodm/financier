@@ -1,10 +1,7 @@
-import type {
-  QueryTransactionsInput,
-  QueryTransactionsOutput,
-} from "../types/mcp.js";
-import { validateQueryTransactionsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { TransactionService } from "../services/transaction-service.js";
+import type { QueryTransactionsOutput } from "../types/mcp.js";
+import { validateQueryTransactionsInput } from "../types/mcp-schemas.js";
 
 export async function handleQueryTransactions(
   args: unknown
@@ -30,4 +27,3 @@ export async function handleQueryTransactions(
     return formatErrorResponse(error);
   }
 }
-

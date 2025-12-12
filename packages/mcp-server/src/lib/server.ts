@@ -14,8 +14,8 @@ import { handleSearchTransactions } from "./handlers/search-transactions-handler
  * Start the MCP server
  */
 export async function startServer(): Promise<void> {
-  // Initialize database client
-  const db = getDatabaseClient();
+  // Initialize database client (connection is lazy, this ensures it's ready)
+  getDatabaseClient();
 
   // Create MCP server
   const server = new Server(
@@ -186,7 +186,7 @@ export async function startServer(): Promise<void> {
     const { name, arguments: args } = request.params;
 
     try {
-      let result;
+      let result: unknown;
 
       switch (name) {
         case "query_transactions":
@@ -235,8 +235,7 @@ export async function startServer(): Promise<void> {
             type: "text",
             text: JSON.stringify({
               success: false,
-              error:
-                error instanceof Error ? error.message : "Unknown error",
+              error: error instanceof Error ? error.message : "Unknown error",
               code: "INTERNAL_ERROR",
             }),
           },
@@ -253,4 +252,3 @@ export async function startServer(): Promise<void> {
   // Log to stderr (MCP protocol uses stdout for communication)
   console.error("MCP Server running on stdio");
 }
-

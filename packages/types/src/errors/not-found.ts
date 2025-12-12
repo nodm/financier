@@ -14,4 +14,3 @@ export class NotFoundError extends FinancierError {
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }
 }
-

@@ -1,10 +1,7 @@
-import type {
-  SearchTransactionsInput,
-  SearchTransactionsOutput,
-} from "../types/mcp.js";
-import { validateSearchTransactionsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { TransactionService } from "../services/transaction-service.js";
+import type { SearchTransactionsOutput } from "../types/mcp.js";
+import { validateSearchTransactionsInput } from "../types/mcp-schemas.js";
 
 export async function handleSearchTransactions(
   args: unknown
@@ -33,4 +30,3 @@ export async function handleSearchTransactions(
     return formatErrorResponse(error);
   }
 }
-

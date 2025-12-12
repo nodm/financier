@@ -1,7 +1,7 @@
-import type { QueryTransactionsInput } from "../types/mcp.js";
 import { transactions } from "@nodm/financier-db";
-import { and, asc, desc, eq, gte, like, lt, or, sql } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
+import { asc, desc, eq, gte, like, lt, or, sql } from "drizzle-orm";
+import type { QueryTransactionsInput } from "../types/mcp.js";
 import { parseDate } from "../utils/date-utils.js";
 
 /**
@@ -55,20 +55,19 @@ export function buildTransactionWhereConditions(
 
   // Merchant filter (partial match, case-insensitive)
   if (input.merchant) {
-    conditions.push(
-      like(transactions.merchant, `%${input.merchant}%`)
-    );
+    conditions.push(like(transactions.merchant, `%${input.merchant}%`));
   }
 
   // Full-text search in description and merchant
   if (input.search) {
     const searchPattern = `%${input.search}%`;
-    conditions.push(
-      or(
-        like(transactions.description, searchPattern),
-        like(transactions.merchant, searchPattern)
-      )!
+    const searchCondition = or(
+      like(transactions.description, searchPattern),
+      like(transactions.merchant, searchPattern)
     );
+    if (searchCondition) {
+      conditions.push(searchCondition);
+    }
   }
 
   return conditions;
@@ -106,4 +105,3 @@ export function buildTransactionOrderBy(
   // Default: sort by date descending
   return desc(transactions.date);
 }
-

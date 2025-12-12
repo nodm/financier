@@ -1,10 +1,7 @@
-import type {
-  GetStatisticsInput,
-  GetStatisticsOutput,
-} from "../types/mcp.js";
-import { validateGetStatisticsInput } from "../types/mcp-schemas.js";
 import { formatErrorResponse, logError } from "../errors.js";
 import { StatisticsService } from "../services/statistics-service.js";
+import type { GetStatisticsOutput } from "../types/mcp.js";
+import { validateGetStatisticsInput } from "../types/mcp-schemas.js";
 
 export async function handleGetStatistics(
   args: unknown
@@ -26,4 +23,3 @@ export async function handleGetStatistics(
     return formatErrorResponse(error);
   }
 }
-

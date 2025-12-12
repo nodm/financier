@@ -53,7 +53,7 @@ export function formatErrorResponse(error: unknown): ErrorResponse {
  */
 export function logError(error: unknown, context?: string): void {
   const prefix = context ? `[${context}]` : "";
-  
+
   if (error instanceof ValidationError) {
     console.warn(`${prefix} Validation error:`, error.message);
   } else if (error instanceof DatabaseError) {
@@ -72,4 +72,3 @@ export function logError(error: unknown, context?: string): void {
     console.error(`${prefix} Unknown error:`, error);
   }
 }
-

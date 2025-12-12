@@ -1,11 +1,8 @@
-import type {
-  GetStatisticsInput,
-  GroupedData,
-} from "../types/mcp.js";
 import { getDatabaseClient, transactions } from "@nodm/financier-db";
-import { and, count, desc, eq, gte, lt, sql } from "drizzle-orm";
-import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as schema from "@nodm/financier-db/schema";
+import { and, count, eq, gte, lt, sql } from "drizzle-orm";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type { GetStatisticsInput, GroupedData } from "../types/mcp.js";
 import { parseDate } from "../utils/date-utils.js";
 
 export class StatisticsService {
@@ -111,7 +108,11 @@ export class StatisticsService {
     totalIncome: number,
     totalExpenses: number
   ): Promise<GroupedData[]> {
-    let groupByField: typeof transactions.category | typeof transactions.merchant | typeof transactions.type | ReturnType<typeof sql>;
+    let groupByField:
+      | typeof transactions.category
+      | typeof transactions.merchant
+      | typeof transactions.type
+      | ReturnType<typeof sql>;
     let groupByExpr: ReturnType<typeof sql>;
 
     if (groupBy === "category") {
@@ -166,4 +167,3 @@ export class StatisticsService {
     return groupedData;
   }
 }
-

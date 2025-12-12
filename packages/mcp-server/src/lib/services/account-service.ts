@@ -1,12 +1,9 @@
-import type { Account } from "@nodm/financier-types";
-import type {
-  AccountWithSummary,
-  GetAccountsInput,
-} from "../types/mcp.js";
 import { accounts, getDatabaseClient, transactions } from "@nodm/financier-db";
+import type * as schema from "@nodm/financier-db/schema";
+import type { Account } from "@nodm/financier-types";
 import { count, desc, eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
-import type * as schema from "@nodm/financier-db/schema";
+import type { AccountWithSummary, GetAccountsInput } from "../types/mcp.js";
 
 export class AccountService {
   constructor(
@@ -94,4 +91,3 @@ export class AccountService {
     return accountsWithData;
   }
 }
-
