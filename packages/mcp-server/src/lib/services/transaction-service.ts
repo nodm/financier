@@ -61,7 +61,9 @@ export class TransactionService {
           ? TransactionType.DEBIT
           : row.type === "credit"
             ? TransactionType.CREDIT
-            : TransactionType.DEBIT,
+            : row.type === "transfer"
+              ? TransactionType.TRANSFER
+              : TransactionType.DEBIT,
       balance: row.balance ? parseFloat(row.balance) : null,
       externalId: row.externalId ?? null,
       source: row.source,
@@ -132,7 +134,9 @@ export class TransactionService {
           ? TransactionType.DEBIT
           : row.type === "credit"
             ? TransactionType.CREDIT
-            : TransactionType.DEBIT,
+            : row.type === "transfer"
+              ? TransactionType.TRANSFER
+              : TransactionType.DEBIT,
       balance: row.balance ? parseFloat(row.balance) : null,
       externalId: row.externalId ?? null,
       source: row.source,

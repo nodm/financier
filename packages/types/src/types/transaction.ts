@@ -6,6 +6,7 @@ import type { Currency } from "./currency.js";
 export enum TransactionType {
   DEBIT = "DEBIT",
   CREDIT = "CREDIT",
+  TRANSFER = "TRANSFER",
 }
 
 /**
@@ -55,7 +56,7 @@ export interface Transaction {
   /** Transaction category */
   category: TransactionCategory;
 
-  /** Transaction type (debit/credit) */
+  /** Transaction type (debit/credit/transfer) */
   type: TransactionType;
 
   /** Account balance after transaction (optional) */
