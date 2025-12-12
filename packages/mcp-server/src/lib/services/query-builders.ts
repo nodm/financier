@@ -42,14 +42,16 @@ export function buildTransactionWhereConditions(
 
   // Amount range filters
   // Note: amounts are stored as text in SQLite, so we need to cast for comparison
+  // Use ABS() because debits are stored as negative values, so we compare absolute amounts
+  // This allows queries like minAmount: 500 with type: "debit" to find $500+ expenses
   if (input.minAmount !== undefined) {
     conditions.push(
-      sql`CAST(${transactions.amount} AS REAL) >= ${input.minAmount}`
+      sql`ABS(CAST(${transactions.amount} AS REAL)) >= ${input.minAmount}`
     );
   }
   if (input.maxAmount !== undefined) {
     conditions.push(
-      sql`CAST(${transactions.amount} AS REAL) <= ${input.maxAmount}`
+      sql`ABS(CAST(${transactions.amount} AS REAL)) <= ${input.maxAmount}`
     );
   }
 
