@@ -1,1 +1,8 @@
-export * from "./lib/mcp-server.js";
+#!/usr/bin/env node
+
+import { startServer } from "./lib/server.js";
+
+startServer().catch((error) => {
+  console.error("Failed to start MCP server:", error);
+  process.exit(1);
+});
