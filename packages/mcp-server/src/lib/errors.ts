@@ -3,12 +3,27 @@ import {
   NotFoundError,
   ValidationError,
 } from "@nodm/financier-types";
+import { ZodError } from "zod";
 import type { ErrorResponse } from "./types/mcp.js";
 
 /**
  * Format error for MCP response
  */
 export function formatErrorResponse(error: unknown): ErrorResponse {
+  // Handle Zod validation errors (from input validation)
+  if (error instanceof ZodError) {
+    // Format Zod errors into a readable message
+    const issues = error.issues.map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "root";
+      return `${path}: ${issue.message}`;
+    });
+    return {
+      success: false,
+      error: `Validation failed: ${issues.join("; ")}`,
+      code: "VALIDATION_ERROR",
+    };
+  }
+
   if (error instanceof ValidationError) {
     return {
       success: false,
@@ -54,7 +69,13 @@ export function formatErrorResponse(error: unknown): ErrorResponse {
 export function logError(error: unknown, context?: string): void {
   const prefix = context ? `[${context}]` : "";
 
-  if (error instanceof ValidationError) {
+  if (error instanceof ZodError) {
+    const issues = error.issues.map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "root";
+      return `${path}: ${issue.message}`;
+    });
+    console.warn(`${prefix} Validation error:`, issues.join("; "));
+  } else if (error instanceof ValidationError) {
     console.warn(`${prefix} Validation error:`, error.message);
   } else if (error instanceof DatabaseError) {
     console.error(`${prefix} Database error:`, error.message);
