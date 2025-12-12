@@ -21,7 +21,7 @@ export const queryTransactionsInputSchema = z
       .optional(),
     accountId: z.string().optional(),
     category: z.string().optional(),
-    type: z.enum(["debit", "credit", "transfer"]).optional(),
+    type: z.enum(["debit", "credit"]).optional(),
     minAmount: z.number().optional(),
     maxAmount: z.number().optional(),
     merchant: z.string().optional(),

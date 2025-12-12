@@ -61,7 +61,7 @@ export async function startServer(): Promise<void> {
               },
               type: {
                 type: "string",
-                enum: ["debit", "credit", "transfer"],
+                enum: ["debit", "credit"],
                 description: "Filter by transaction type",
               },
               minAmount: {

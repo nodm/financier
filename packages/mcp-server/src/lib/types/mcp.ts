@@ -13,7 +13,7 @@ export interface QueryTransactionsInput {
   /** Filter by category */
   category?: string;
   /** Filter by transaction type */
-  type?: "debit" | "credit" | "transfer";
+  type?: "debit" | "credit";
   /** Minimum transaction amount */
   minAmount?: number;
   /** Maximum transaction amount */
