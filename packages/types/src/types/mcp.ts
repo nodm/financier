@@ -60,9 +60,9 @@ export interface GetAccountsInput {
 /**
  * Account with optional summary data
  */
-export interface AccountWithSummary extends Account {
-  /** Current balance from latest transaction */
-  currentBalance?: number;
+export interface AccountWithSummary extends Omit<Account, "currentBalance"> {
+  /** Current balance from latest transaction (overrides Account.currentBalance) */
+  currentBalance?: number | null;
   /** Total transaction count */
   transactionCount?: number;
   /** Last transaction date */
