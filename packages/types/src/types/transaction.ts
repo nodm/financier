@@ -6,7 +6,6 @@ import type { Currency } from "./currency.js";
 export enum TransactionType {
   DEBIT = "DEBIT",
   CREDIT = "CREDIT",
-  TRANSFER = "TRANSFER",
 }
 
 /**
