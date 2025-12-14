@@ -5,6 +5,16 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+    "nx": {
+    "includedScripts": [],
+    "targets": {
+      "serve": {
+        "command": "npx -y @modelcontextprotocol/inspector node ./dist/index.js",
+        "dependsOn": ["build"],
+        "continuous": true
+      }
+    }
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -18,7 +28,14 @@
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "bin": {
+    "financier-mcp-server": "./dist/index.js"
+  },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@nodm/financier-db": "workspace:*",
+    "@nodm/financier-types": "workspace:*",
+    "tslib": "^2.3.0",
+    "zod": "^3.24.1"
   }
 }

@@ -27,9 +27,10 @@ describe("duplicate-detector", () => {
     await db.insert(accounts).values({
       id: testAccountId,
       name: "Test Account",
+      openDate: new Date().toISOString(),
       currency: "EUR",
       bankCode: "SEB",
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
   });
 
@@ -64,13 +65,13 @@ describe("duplicate-detector", () => {
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
-        date: new Date("2025-01-15"),
+        date: new Date("2025-01-15").toISOString(),
         amount: "100",
         currency: "EUR",
         description: "",
         type: "CREDIT",
         source: "SEB",
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
       const transaction: RawTransactionData = {
@@ -90,13 +91,13 @@ describe("duplicate-detector", () => {
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
-        date: new Date("2025-01-15"),
+        date: new Date("2025-01-15").toISOString(),
         amount: "100",
         currency: "EUR",
         description: "",
         type: "CREDIT",
         source: "SEB",
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
       const transaction: RawTransactionData = {
@@ -119,13 +120,13 @@ describe("duplicate-detector", () => {
         id: randomUUID(),
         accountId: testAccountId,
         externalId: "TEST001",
-        date: new Date("2025-01-15"),
+        date: new Date("2025-01-15").toISOString(),
         amount: "100",
         currency: "EUR",
         description: "",
         type: "CREDIT",
         source: "SEB",
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
       const transactions: Array<RawTransactionData> = [
@@ -179,25 +180,25 @@ describe("duplicate-detector", () => {
           id: randomUUID(),
           accountId: testAccountId,
           externalId: "TEST001",
-          date: new Date("2025-01-15"),
+          date: new Date("2025-01-15").toISOString(),
           amount: "100",
           currency: "EUR",
           description: "",
           type: "CREDIT",
           source: "SEB",
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         },
         {
           id: randomUUID(),
           accountId: testAccountId,
           externalId: "TEST002",
-          date: new Date("2025-01-16"),
+          date: new Date("2025-01-16").toISOString(),
           amount: "200",
           currency: "EUR",
           description: "",
           type: "CREDIT",
           source: "SEB",
-          updatedAt: new Date(),
+          updatedAt: new Date().toISOString(),
         },
       ]);
 

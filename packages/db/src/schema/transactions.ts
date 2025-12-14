@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
   index,
-  integer,
   sqliteTable,
   text,
   unique,
@@ -19,7 +18,7 @@ export const transactions = sqliteTable(
       () => accounts.id,
       { onDelete: "set null" }
     ),
-    date: integer("date", { mode: "timestamp" }).notNull(),
+    date: text("date").notNull(),
     amount: text("amount").notNull(),
     currency: text("currency").notNull(),
     originalAmount: text("originalAmount"),
@@ -31,15 +30,15 @@ export const transactions = sqliteTable(
     balance: text("balance"),
     externalId: text("externalId"),
     source: text("source").notNull(),
-    importedAt: integer("importedAt", { mode: "timestamp" })
+    importedAt: text("importedAt")
       .notNull()
-      .default(sql`(unixepoch())`),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("createdAt")
       .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updatedAt", { mode: "timestamp" })
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt")
       .notNull()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => new Date().toISOString()),
   },
   (table) => [
     index("transactions_accountId_idx").on(table.accountId),

@@ -1,25 +1,25 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const accounts = sqliteTable(
   "accounts",
   {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
-    openDate: integer("openDate", { mode: "timestamp" }),
+    openDate: text("openDate").notNull(),
     openingBalance: text("openingBalance"),
     currentBalance: text("currentBalance"),
     currency: text("currency").notNull(),
     bankCode: text("bankCode").notNull(),
-    isActive: integer("isActive", { mode: "boolean" })
+    isActive: text("isActive")
       .notNull()
-      .default(sql`1`),
-    createdAt: integer("createdAt", { mode: "timestamp" })
+      .default("true"),
+    createdAt: text("createdAt")
       .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updatedAt", { mode: "timestamp" })
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updatedAt")
       .notNull()
-      .$onUpdate(() => new Date()),
+      .$onUpdate(() => new Date().toISOString()),
   },
   (table) => [index("accounts_bankCode_idx").on(table.bankCode)]
 );

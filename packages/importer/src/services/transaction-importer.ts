@@ -8,7 +8,7 @@ import {
 import { type ImportResult, TransactionType } from "@nodm/financier-types";
 import { eq } from "drizzle-orm";
 import { getParser } from "../parsers/parser-factory.js";
-import { normalizeDate } from "../utils/date-utils.js";
+import { normalizeDateToISO } from "../utils/date-utils.js";
 import { filterDuplicates } from "./duplicate-detector.js";
 
 export interface ImportOptions {
@@ -128,7 +128,7 @@ export async function importCSV(
             accountId: targetAccountId,
             counterpartyAccountId: null,
             externalId: t.externalId,
-            date: normalizeDate(t.date),
+            date: normalizeDateToISO(t.date),
             // Amount stored as string for decimal precision (avoid floating-point errors)
             amount: amount.toString(),
             currency: typeof t.currency === "string" ? t.currency : t.currency,
@@ -144,7 +144,7 @@ export async function importCSV(
                 : t.balance.toString()
               : null,
             source: parser.bankCode,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           };
         })
       );
@@ -182,9 +182,10 @@ async function ensureAccount(
     await db.insert(accounts).values({
       id: accountId,
       name: `Account ${accountId.slice(-4)}`,
+      openDate: new Date().toISOString(),
       currency: "EUR",
       bankCode,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
   }
 }
