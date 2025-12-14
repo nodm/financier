@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./out-tsc/jest",
+    // Jest requires CommonJS for compatibility with ESM imports
     "module": "commonjs",
+    // node10 resolution required for Jest - modern "node" resolution fails with package.json exports
     "moduleResolution": "node10",
     "customConditions": null,
     "types": ["jest", "node"]
