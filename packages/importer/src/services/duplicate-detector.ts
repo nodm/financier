@@ -2,7 +2,7 @@ import type { getDatabaseClient } from "@nodm/financier-db";
 import { transactions } from "@nodm/financier-db";
 import type { RawTransactionData } from "@nodm/financier-types";
 import { and, eq } from "drizzle-orm";
-import { normalizeDate, normalizeDateToISO } from "../utils/date-utils.js";
+import { normalizeDateToISO } from "../utils/date-utils.js";
 
 /**
  * Result of filtering duplicates
@@ -30,7 +30,7 @@ export async function isDuplicate(
   transaction: RawTransactionData,
   accountId: string
 ): Promise<boolean> {
-  const date = normalizeDate(transaction.date);
+  const date = normalizeDateToISO(transaction.date);
 
   const [existing] = await db
     .select()
