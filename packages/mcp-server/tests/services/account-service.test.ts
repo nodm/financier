@@ -75,22 +75,18 @@ async function setupTestDatabase() {
     sql`CREATE INDEX transactions_accountId_date_idx ON transactions(accountId, date)`
   );
 
-  // Insert test data using raw SQL (to avoid schema column mismatch)
+  // Insert test data using parameterized queries
   const now = new Date().toISOString();
   const accountId = "test-account-1";
 
   await db.run(
-    sql.raw(
-      `INSERT INTO accounts (id, name, openDate, openingBalance, currency, bankCode, isActive, createdAt, updatedAt)
-       VALUES ('${accountId}', 'Test Account', '2024-01-01', '1000.00', 'EUR', 'TEST', 'true', '${now}', '${now}')`
-    )
+    sql`INSERT INTO accounts (id, name, openDate, openingBalance, currency, bankCode, isActive, createdAt, updatedAt)
+        VALUES (${accountId}, ${"Test Account"}, ${"2024-01-01"}, ${"1000.00"}, ${"EUR"}, ${"TEST"}, ${"true"}, ${now}, ${now})`
   );
 
   await db.run(
-    sql.raw(
-      `INSERT INTO transactions (id, accountId, date, amount, currency, description, type, balance, source, createdAt, updatedAt)
-       VALUES ('test-txn-1', '${accountId}', '2024-01-15', '-50.00', 'EUR', 'Test transaction', 'debit', '950.00', 'test', '${now}', '${now}')`
-    )
+    sql`INSERT INTO transactions (id, accountId, date, amount, currency, description, type, balance, source, createdAt, updatedAt)
+        VALUES (${"test-txn-1"}, ${accountId}, ${"2024-01-15"}, ${"-50.00"}, ${"EUR"}, ${"Test transaction"}, ${"debit"}, ${"950.00"}, ${"test"}, ${now}, ${now})`
   );
 }
 

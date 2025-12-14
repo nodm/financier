@@ -11,6 +11,10 @@ export class AccountService {
 
     const allAccounts = await db.select().from(accounts);
 
+    // TODO(Phase 8): Optimize N+1 query problem
+    // Current: 1 + 2N queries (1 for accounts, 2 per account for enhancements)
+    // Solution: Batch queries with GROUP BY for transaction counts and latest transactions
+    // Defer until Phase 8 benchmarking reveals if this is a bottleneck
     // Enhance with balance and summary if requested
     return Promise.all(
       allAccounts.map(async (account) => {
@@ -34,10 +38,7 @@ export class AccountService {
               enhancements.currentBalance = Number.parseFloat(latest.balance);
             }
             if (input.includeSummary) {
-              // Dates are stored as text in ISO format
-              if (typeof latest.date === 'string') {
-                enhancements.lastTransactionDate = latest.date;
-              }
+              enhancements.lastTransactionDate = latest.date;
             }
           }
         }
