@@ -216,5 +216,25 @@ describe("SebLtParser", () => {
       expect(result.transactions).toHaveLength(1);
       expect(result.transactions[0].counterpartyAccountId).toBeNull();
     });
+
+    it("should extract counterparty account from Lithuanian format with SĄSKAITA column", async () => {
+      const csvContent = `"SĄSKAITOS  (LT123456789012345678) IŠRAŠAS (UŽ LAIKOTARPĮ: 2025-01-01-2025-01-31)";
+"DOK NR.";"DATA";"VALIUTA";"SUMA";"MOKĖTOJO ARBA GAVĖJO PAVADINIMAS";"MOKĖTOJO ARBA GAVĖJO IDENTIFIKACINIS KODAS";"SĄSKAITA";"KREDITO ĮSTAIGOS PAVADINIMAS";"KREDITO ĮSTAIGOS SWIFT KODAS";"MOKĖJIMO PASKIRTIS";"TRANSAKCIJOS KODAS";"DOKUMENTO DATA";"TRANSAKCIJOS TIPAS";"NUORODA";"DEBETAS/KREDITAS";"SUMA SĄSKAITOS VALIUTA";"SĄSKAITOS NR";"SĄSKAITOS VALIUTA";
+"TM001";2025-01-15;"EUR";100,50;"Test Merchant";"";"LT987654321098765432";"Test Bank";"TESTLT2X";"Payment details";"RO001";2025-01-15;"Payment";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-lithuanian-counterparty.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0]).toMatchObject({
+        externalId: "RO001",
+        amount: 100.5,
+        counterpartyAccountId: "LT987654321098765432",
+        accountNumber: "LT123456789012345678",
+      });
+    });
   });
 });

@@ -268,12 +268,10 @@ export class SebLtParser extends BaseParser {
       }
     }
 
-    // Determine which ACCOUNT NO is counterparty vs my account
-    // First occurrence = counterparty, second = my account
+    // First ACCOUNT NO column = counterparty account
+    // Second ACCOUNT NO column = my account (not extracted, uses chunk.accountId)
     const counterpartyAccountIdx =
       accountNoIndices.length > 0 ? accountNoIndices[0] : -1;
-    const myAccountIdx =
-      accountNoIndices.length > 1 ? accountNoIndices[1] : -1;
 
     // Process data rows
     const transactions: Array<RawTransactionData> = [];
@@ -307,9 +305,7 @@ export class SebLtParser extends BaseParser {
       if (counterpartyAccountIdx >= 0) {
         normalized.counterpartyAccountId = row[counterpartyAccountIdx] || "";
       }
-      if (myAccountIdx >= 0) {
-        normalized.accountNumber = row[myAccountIdx] || "";
-      }
+      // Note: myAccountIdx not stored as mapRow uses chunk.accountId instead
 
       transactions.push(this.mapRow(normalized, chunk.accountId));
     }
