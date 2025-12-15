@@ -120,35 +120,8 @@ export async function importCSV(
         const targetAccountId =
           overrideAccountId || t.accountNumber || parsedAccountId;
 
-        const mappedTransaction = {
-          id: crypto.randomUUID(),
-          accountId: targetAccountId,
-          counterpartyAccountId: null,
-          externalId: t.externalId,
-          date: normalizeDateToISO(t.date),
-          // Amount stored as string for decimal precision (avoid floating-point errors)
-          amount: amount.toString(),
-          currency: typeof t.currency === "string" ? t.currency : t.currency,
-          originalAmount: null,
-          originalCurrency: null,
-          merchant: t.merchant || null,
-          description: t.description || "",
-          category: t.category || null,
-          type,
-          balance: t.balance
-            ? typeof t.balance === "string"
-              ? t.balance
-              : t.balance.toString()
-            : null,
-          source: parser.bankCode,
-          updatedAt: new Date().toISOString(),
-        };
-
         db.transaction((tx) => {
-          // 1. Insert transaction
-          tx.insert(transactionsTable).values(mappedTransaction).run();
-
-          // 2. Update account balance incrementally
+          // 1. Get current account balance
           const account = tx
             .select({ currentBalance: accounts.currentBalance })
             .from(accounts)
@@ -162,9 +135,36 @@ export async function importCSV(
           }
 
           const current = Number.parseFloat(account.currentBalance);
-          const txAmount = Number.parseFloat(mappedTransaction.amount);
+          const txAmount = Number.parseFloat(
+            typeof t.amount === "string" ? t.amount : t.amount.toString()
+          );
           const newBalance = current + txAmount;
 
+          // 2. Create transaction with calculated balance
+          const mappedTransaction = {
+            id: crypto.randomUUID(),
+            accountId: targetAccountId,
+            counterpartyAccountId: null,
+            externalId: t.externalId,
+            date: normalizeDateToISO(t.date),
+            // Amount stored as string for decimal precision (avoid floating-point errors)
+            amount: txAmount.toString(),
+            currency: typeof t.currency === "string" ? t.currency : t.currency,
+            originalAmount: null,
+            originalCurrency: null,
+            merchant: t.merchant || null,
+            description: t.description || "",
+            category: t.category || null,
+            type,
+            balance: newBalance.toString(),
+            source: parser.bankCode,
+            updatedAt: new Date().toISOString(),
+          };
+
+          // 3. Insert transaction
+          tx.insert(transactionsTable).values(mappedTransaction).run();
+
+          // 4. Update account balance
           tx.update(accounts)
             .set({
               currentBalance: newBalance.toString(),
