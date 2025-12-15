@@ -86,6 +86,13 @@ export async function importCSV(
       );
     }
 
+    // Validate all accounts exist before importing (even in dry-run mode)
+    if (newTransactions.length > 0) {
+      for (const accId of accountIds) {
+        await validateAccount(db, accId);
+      }
+    }
+
     if (dryRun) {
       return {
         success: true,
@@ -103,16 +110,16 @@ export async function importCSV(
       };
     }
 
-    // Validate all accounts exist before importing
-    if (newTransactions.length > 0) {
-      for (const accId of accountIds) {
-        await validateAccount(db, accId);
-      }
-    }
+    // Sort transactions by date to ensure correct balance calculation
+    const sortedTransactions = newTransactions.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
 
     // Process each transaction in its own database transaction
-    if (newTransactions.length > 0) {
-      for (const t of newTransactions) {
+    if (sortedTransactions.length > 0) {
+      for (const t of sortedTransactions) {
         const amount =
           typeof t.amount === "string" ? Number.parseFloat(t.amount) : t.amount;
         const type =
@@ -135,10 +142,7 @@ export async function importCSV(
           }
 
           const current = Number.parseFloat(account.currentBalance);
-          const txAmount = Number.parseFloat(
-            typeof t.amount === "string" ? t.amount : t.amount.toString()
-          );
-          const newBalance = current + txAmount;
+          const newBalance = current + amount;
 
           // 2. Create transaction with calculated balance
           const mappedTransaction = {
@@ -148,7 +152,7 @@ export async function importCSV(
             externalId: t.externalId,
             date: normalizeDateToISO(t.date),
             // Amount stored as string for decimal precision (avoid floating-point errors)
-            amount: txAmount.toString(),
+            amount: amount.toString(),
             currency: typeof t.currency === "string" ? t.currency : t.currency,
             originalAmount: null,
             originalCurrency: null,

@@ -42,7 +42,7 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 **Constraints**:
 
 - Primary key on `id`
-- `openingBalance` and `currentBalance` must be non-null and >= 0 (both default to "0")
+- `openingBalance` and `currentBalance` are non-null (both default to "0"). Enforced at ORM level by Drizzle. Negative balances allowed for overdrafts and credit cards
 
 **Indexes**:
 
