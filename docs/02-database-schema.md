@@ -31,8 +31,8 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 - `id` (String, Primary Key) - IBAN (required, user-provided for all accounts)
 - `name` (String) - User-friendly account name (required, manually set)
 - `openDate` (String, ISO 8601) - When account was opened (required, manually set)
-- `openingBalance` (String, Decimal) - Initial account balance (optional, manually set)
-- `currentBalance` (String, Decimal) - Current account balance (optional, stored, updated on import)
+- `openingBalance` (String, Decimal) - Initial account balance (**required**, default: "0", must be >= 0)
+- `currentBalance` (String, Decimal) - Current account balance (**required**, default: "0", automatically updated on each transaction import)
 - `currency` (String) - Primary account currency (ISO 4217 code)
 - `bankCode` (String) - Which bank this account belongs to
 - `isActive` (String) - Whether account is active (default: 'true')
@@ -42,6 +42,7 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 **Constraints**:
 
 - Primary key on `id`
+- `openingBalance` and `currentBalance` are non-null (both default to "0"). Enforced at ORM level by Drizzle. Negative balances allowed for overdrafts and credit cards
 
 **Indexes**:
 
@@ -56,6 +57,7 @@ Stores information about financial accounts (bank accounts, credit cards, etc.)
 - Last 4 digits (mask) calculated from `id` for UI display (e.g., `id.slice(-4)`)
 - Account metadata (name, openDate, openingBalance) must be manually set by user
 - One account = one currency. Multi-currency transactions stored with original amount/currency fields
+- **Balance tracking**: `currentBalance` is automatically updated on each transaction import using atomic database transactions (insert transaction + update balance)
 
 ---
 

@@ -65,13 +65,6 @@ export async function importCSV(
   const db = getDatabaseClient();
 
   try {
-    // Ensure all accounts exist (skip in dry-run mode)
-    if (!dryRun) {
-      for (const accId of accountIds) {
-        await ensureAccount(db, accId, parser.bankCode);
-      }
-    }
-
     if (verbose) {
       console.log(`[INFO] Checking for duplicates...`);
     }
@@ -93,6 +86,13 @@ export async function importCSV(
       );
     }
 
+    // Validate all accounts exist before importing (even in dry-run mode)
+    if (newTransactions.length > 0) {
+      for (const accId of accountIds) {
+        await validateAccount(db, accId);
+      }
+    }
+
     if (dryRun) {
       return {
         success: true,
@@ -110,20 +110,42 @@ export async function importCSV(
       };
     }
 
-    // Insert transactions
-    if (newTransactions.length > 0) {
-      await db.insert(transactionsTable).values(
-        newTransactions.map((t) => {
-          const amount =
-            typeof t.amount === "string"
-              ? Number.parseFloat(t.amount)
-              : t.amount;
-          const type =
-            amount >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT;
-          const targetAccountId =
-            overrideAccountId || t.accountNumber || parsedAccountId;
+    // Sort transactions by date to ensure correct balance calculation
+    const sortedTransactions = newTransactions.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateA - dateB;
+    });
 
-          return {
+    // Process each transaction in its own database transaction
+    if (sortedTransactions.length > 0) {
+      for (const t of sortedTransactions) {
+        const amount =
+          typeof t.amount === "string" ? Number.parseFloat(t.amount) : t.amount;
+        const type =
+          amount >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT;
+        const targetAccountId =
+          overrideAccountId || t.accountNumber || parsedAccountId;
+
+        db.transaction((tx) => {
+          // 1. Get current account balance
+          const account = tx
+            .select({ currentBalance: accounts.currentBalance })
+            .from(accounts)
+            .where(eq(accounts.id, targetAccountId))
+            .get();
+
+          if (!account) {
+            throw new Error(
+              `Account ${targetAccountId} not found during balance update`
+            );
+          }
+
+          const current = Number.parseFloat(account.currentBalance);
+          const newBalance = current + amount;
+
+          // 2. Create transaction with calculated balance
+          const mappedTransaction = {
             id: crypto.randomUUID(),
             accountId: targetAccountId,
             counterpartyAccountId: null,
@@ -138,16 +160,24 @@ export async function importCSV(
             description: t.description || "",
             category: t.category || null,
             type,
-            balance: t.balance
-              ? typeof t.balance === "string"
-                ? t.balance
-                : t.balance.toString()
-              : null,
+            balance: newBalance.toString(),
             source: parser.bankCode,
             updatedAt: new Date().toISOString(),
           };
-        })
-      );
+
+          // 3. Insert transaction
+          tx.insert(transactionsTable).values(mappedTransaction).run();
+
+          // 4. Update account balance
+          tx.update(accounts)
+            .set({
+              currentBalance: newBalance.toString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(accounts.id, targetAccountId))
+            .run();
+        });
+      }
     }
 
     return {
@@ -167,10 +197,9 @@ export async function importCSV(
   }
 }
 
-async function ensureAccount(
+async function validateAccount(
   db: ReturnType<typeof getDatabaseClient>,
-  accountId: string,
-  bankCode: string
+  accountId: string
 ): Promise<void> {
   const [existing] = await db
     .select()
@@ -179,13 +208,8 @@ async function ensureAccount(
     .limit(1);
 
   if (!existing) {
-    await db.insert(accounts).values({
-      id: accountId,
-      name: `Account ${accountId.slice(-4)}`,
-      openDate: new Date().toISOString(),
-      currency: "EUR",
-      bankCode,
-      updatedAt: new Date().toISOString(),
-    });
+    throw new Error(
+      `Account ${accountId} does not exist. Please create account before importing.`
+    );
   }
 }
