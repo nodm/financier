@@ -148,7 +148,7 @@ export async function importCSV(
           const mappedTransaction = {
             id: crypto.randomUUID(),
             accountId: targetAccountId,
-            counterpartyAccountId: null,
+            counterpartyAccountId: t.counterpartyAccountId || null,
             externalId: t.externalId,
             date: normalizeDateToISO(t.date),
             // Amount stored as string for decimal precision (avoid floating-point errors)

@@ -110,6 +110,9 @@ export interface RawTransactionData {
 
   /** Account number (for multi-account CSVs) */
   accountNumber?: string;
+
+  /** Counterparty account ID (for internal transfers) */
+  counterpartyAccountId?: string | null;
 }
 
 /**

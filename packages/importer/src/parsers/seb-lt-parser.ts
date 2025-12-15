@@ -31,6 +31,7 @@ const HEADER_MAPPINGS = {
   "MOKĖTOJO ARBA GAVĖJO PAVADINIMAS": "merchant",
   "TRANSAKCIJOS TIPAS": "category",
   "DEBETAS/KREDITAS": "typeIndicator",
+  "SĄSKAITA": "counterpartyAccountId",
   "SĄSKAITOS NR": "accountNumber",
   "MOKĖJIMO PASKIRTIS": "description",
   // English -> normalized key
@@ -67,6 +68,7 @@ export class SebLtParser extends BaseParser {
 
   async parse(filePath: string): Promise<ParsedData> {
     const content = readFileSync(filePath, "utf-8");
+    const format = this.detectFormat(content);
     const chunks = this.splitIntoAccountChunks(content);
 
     if (chunks.length === 0) {
@@ -77,7 +79,7 @@ export class SebLtParser extends BaseParser {
     const allTransactions: Array<RawTransactionData> = [];
 
     for (const chunk of chunks) {
-      const chunkTransactions = this.parseChunk(chunk);
+      const chunkTransactions = this.parseChunk(chunk, format);
       if (chunkTransactions.length > 0) {
         allTransactions.push(...chunkTransactions);
       }
@@ -187,7 +189,16 @@ export class SebLtParser extends BaseParser {
     return normalized;
   }
 
-  private parseChunk(chunk: AccountChunk): Array<RawTransactionData> {
+  private parseChunk(
+    chunk: AccountChunk,
+    format: "lithuanian" | "english"
+  ): Array<RawTransactionData> {
+    // Use index-based parsing for English format to handle duplicate ACCOUNT NO columns
+    if (format === "english") {
+      return this.parseChunkWithDuplicateHeaders(chunk);
+    }
+
+    // Lithuanian format - use standard header-based parsing
     const result = Papa.parse(chunk.csvContent, {
       delimiter: ";",
       header: true,
@@ -219,6 +230,93 @@ export class SebLtParser extends BaseParser {
       );
   }
 
+  private parseChunkWithDuplicateHeaders(
+    chunk: AccountChunk
+  ): Array<RawTransactionData> {
+    // Parse CSV as arrays to preserve duplicate column headers
+    const result = Papa.parse(chunk.csvContent, {
+      delimiter: ";",
+      header: false,
+      skipEmptyLines: true,
+    });
+
+    if (result.errors.length > 0) {
+      throw new Error(
+        `CSV parse error: ${result.errors
+          .map((e: { message: string }) => e.message)
+          .join(", ")}`
+      );
+    }
+
+    const data = result.data as Array<Array<string>>;
+    if (data.length < 2) {
+      return [];
+    }
+
+    // Extract and trim headers
+    const headers = data[0].map((h) => h.trim());
+
+    // Build column index map
+    const columnMap = new Map<string, number>();
+    const accountNoIndices: Array<number> = [];
+
+    for (const [index, header] of headers.entries()) {
+      if (header === "ACCOUNT NO") {
+        accountNoIndices.push(index);
+      } else {
+        columnMap.set(header, index);
+      }
+    }
+
+    // Determine which ACCOUNT NO is counterparty vs my account
+    // First occurrence = counterparty, second = my account
+    const counterpartyAccountIdx =
+      accountNoIndices.length > 0 ? accountNoIndices[0] : -1;
+    const myAccountIdx =
+      accountNoIndices.length > 1 ? accountNoIndices[1] : -1;
+
+    // Process data rows
+    const transactions: Array<RawTransactionData> = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+
+      // Check for transaction code (required)
+      const transactionCodeIdx = columnMap.get("TRANSACTION CODE");
+      if (
+        transactionCodeIdx === undefined ||
+        !row[transactionCodeIdx] ||
+        row[transactionCodeIdx].trim() === ""
+      ) {
+        continue;
+      }
+
+      // Build normalized record using index-based access
+      const normalized: Record<string, string> = {};
+
+      for (const [header, idx] of columnMap.entries()) {
+        const mappedKey = HEADER_MAPPINGS[header as keyof typeof HEADER_MAPPINGS];
+        if (mappedKey) {
+          normalized[mappedKey] = row[idx] || "";
+        }
+        // Keep original header for backward compatibility
+        normalized[header] = row[idx] || "";
+      }
+
+      // Handle duplicate ACCOUNT NO columns
+      if (counterpartyAccountIdx >= 0) {
+        normalized.counterpartyAccountId = row[counterpartyAccountIdx] || "";
+      }
+      if (myAccountIdx >= 0) {
+        normalized.accountNumber = row[myAccountIdx] || "";
+      }
+
+      transactions.push(this.mapRow(normalized, chunk.accountId));
+    }
+
+    return transactions;
+  }
+
   // biome-ignore lint/correctness/noUnusedFunctionParameters: Not used in this implementation
   protected extractAccountId(data: ParseResult): string {
     return "";
@@ -247,6 +345,12 @@ export class SebLtParser extends BaseParser {
       row.instructionId ||
       row["DOK NR."];
 
+    // Extract counterparty account ID
+    const counterpartyAccountId =
+      row.counterpartyAccountId ||
+      row.SĄSKAITA ||
+      null;
+
     return {
       externalId,
       date,
@@ -261,6 +365,10 @@ export class SebLtParser extends BaseParser {
       category: row.category || row["TRANSAKCIJOS TIPAS"] || null,
       typeIndicator,
       accountNumber: accountId,
+      counterpartyAccountId:
+        counterpartyAccountId && counterpartyAccountId.trim() !== ""
+          ? counterpartyAccountId.trim()
+          : null,
     };
   }
 }
