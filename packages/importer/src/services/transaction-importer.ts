@@ -65,13 +65,6 @@ export async function importCSV(
   const db = getDatabaseClient();
 
   try {
-    // Ensure all accounts exist (skip in dry-run mode)
-    if (!dryRun) {
-      for (const accId of accountIds) {
-        await ensureAccount(db, accId, parser.bankCode);
-      }
-    }
-
     if (verbose) {
       console.log(`[INFO] Checking for duplicates...`);
     }
@@ -110,44 +103,77 @@ export async function importCSV(
       };
     }
 
-    // Insert transactions
+    // Validate all accounts exist before importing
     if (newTransactions.length > 0) {
-      await db.insert(transactionsTable).values(
-        newTransactions.map((t) => {
-          const amount =
-            typeof t.amount === "string"
-              ? Number.parseFloat(t.amount)
-              : t.amount;
-          const type =
-            amount >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT;
-          const targetAccountId =
-            overrideAccountId || t.accountNumber || parsedAccountId;
+      for (const accId of accountIds) {
+        await validateAccount(db, accId);
+      }
+    }
 
-          return {
-            id: crypto.randomUUID(),
-            accountId: targetAccountId,
-            counterpartyAccountId: null,
-            externalId: t.externalId,
-            date: normalizeDateToISO(t.date),
-            // Amount stored as string for decimal precision (avoid floating-point errors)
-            amount: amount.toString(),
-            currency: typeof t.currency === "string" ? t.currency : t.currency,
-            originalAmount: null,
-            originalCurrency: null,
-            merchant: t.merchant || null,
-            description: t.description || "",
-            category: t.category || null,
-            type,
-            balance: t.balance
-              ? typeof t.balance === "string"
-                ? t.balance
-                : t.balance.toString()
-              : null,
-            source: parser.bankCode,
-            updatedAt: new Date().toISOString(),
-          };
-        })
-      );
+    // Process each transaction in its own database transaction
+    if (newTransactions.length > 0) {
+      for (const t of newTransactions) {
+        const amount =
+          typeof t.amount === "string" ? Number.parseFloat(t.amount) : t.amount;
+        const type =
+          amount >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT;
+        const targetAccountId =
+          overrideAccountId || t.accountNumber || parsedAccountId;
+
+        const mappedTransaction = {
+          id: crypto.randomUUID(),
+          accountId: targetAccountId,
+          counterpartyAccountId: null,
+          externalId: t.externalId,
+          date: normalizeDateToISO(t.date),
+          // Amount stored as string for decimal precision (avoid floating-point errors)
+          amount: amount.toString(),
+          currency: typeof t.currency === "string" ? t.currency : t.currency,
+          originalAmount: null,
+          originalCurrency: null,
+          merchant: t.merchant || null,
+          description: t.description || "",
+          category: t.category || null,
+          type,
+          balance: t.balance
+            ? typeof t.balance === "string"
+              ? t.balance
+              : t.balance.toString()
+            : null,
+          source: parser.bankCode,
+          updatedAt: new Date().toISOString(),
+        };
+
+        db.transaction((tx) => {
+          // 1. Insert transaction
+          tx.insert(transactionsTable).values(mappedTransaction).run();
+
+          // 2. Update account balance incrementally
+          const account = tx
+            .select({ currentBalance: accounts.currentBalance })
+            .from(accounts)
+            .where(eq(accounts.id, targetAccountId))
+            .get();
+
+          if (!account) {
+            throw new Error(
+              `Account ${targetAccountId} not found during balance update`
+            );
+          }
+
+          const current = Number.parseFloat(account.currentBalance);
+          const txAmount = Number.parseFloat(mappedTransaction.amount);
+          const newBalance = current + txAmount;
+
+          tx.update(accounts)
+            .set({
+              currentBalance: newBalance.toString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(accounts.id, targetAccountId))
+            .run();
+        });
+      }
     }
 
     return {
@@ -167,10 +193,9 @@ export async function importCSV(
   }
 }
 
-async function ensureAccount(
+async function validateAccount(
   db: ReturnType<typeof getDatabaseClient>,
-  accountId: string,
-  bankCode: string
+  accountId: string
 ): Promise<void> {
   const [existing] = await db
     .select()
@@ -179,13 +204,8 @@ async function ensureAccount(
     .limit(1);
 
   if (!existing) {
-    await db.insert(accounts).values({
-      id: accountId,
-      name: `Account ${accountId.slice(-4)}`,
-      openDate: new Date().toISOString(),
-      currency: "EUR",
-      bankCode,
-      updatedAt: new Date().toISOString(),
-    });
+    throw new Error(
+      `Account ${accountId} does not exist. Please create account before importing.`
+    );
   }
 }

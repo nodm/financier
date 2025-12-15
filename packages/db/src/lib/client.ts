@@ -51,7 +51,7 @@ export function getDatabaseClient(): BetterSQLite3Database<typeof schema> {
         timeout: 5000,
       });
 
-      db = drizzle(sqliteClient, { schema });
+      db = drizzle({ client: sqliteClient, schema });
     } catch (error) {
       throw new DatabaseError(
         "Failed to initialize database client",
