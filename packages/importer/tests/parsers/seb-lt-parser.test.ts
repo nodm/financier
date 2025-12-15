@@ -181,5 +181,60 @@ describe("SebLtParser", () => {
       expect(result.transactions[0].amount).toBe(-50.25);
       expect(result.transactions[0].typeIndicator).toBe("D");
     });
+
+    it("should extract counterparty account from English format with duplicate ACCOUNT NO columns", async () => {
+      const csvContent = `"ACCOUNT  (LT123456789012345678) STATEMENT (FOR PERIOD: 2025-01-01-2025-01-31)";
+"INSTRUCTION ID";"DATE";"CURRENCY";"AMOUNT";"COUNTERPARTY";"DEBTOR/CREDITOR ID";"ACCOUNT NO";"CREDIT INSTITUTION NAME";"CREDIT INSTITUTION SWIFT";"DETAILS OF PAYMENTS";"TRANSACTION CODE";"DOCUMENT DATE";"TRANSACTION TYPE";"REFERENCE NO";"DEBIT/CREDIT";"AMOUNT IN ACCOUNT CURRENCY";"ACCOUNT NO";"ACCOUNT CURRENCY";
+"TM001";2025-01-15;"EUR";100,50;"Test Merchant";"";"LT987654321098765432";"Test Bank";"TESTLT2X";"Payment details";"RO001";2025-01-15;"Payment";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-counterparty.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0]).toMatchObject({
+        externalId: "RO001",
+        amount: 100.5,
+        counterpartyAccountId: "LT987654321098765432",
+        accountNumber: "LT123456789012345678",
+      });
+    });
+
+    it("should handle empty counterparty account in English format", async () => {
+      const csvContent = `"ACCOUNT  (LT123456789012345678) STATEMENT (FOR PERIOD: 2025-01-01-2025-01-31)";
+"INSTRUCTION ID";"DATE";"CURRENCY";"AMOUNT";"COUNTERPARTY";"DEBTOR/CREDITOR ID";"ACCOUNT NO";"CREDIT INSTITUTION NAME";"CREDIT INSTITUTION SWIFT";"DETAILS OF PAYMENTS";"TRANSACTION CODE";"DOCUMENT DATE";"TRANSACTION TYPE";"REFERENCE NO";"DEBIT/CREDIT";"AMOUNT IN ACCOUNT CURRENCY";"ACCOUNT NO";"ACCOUNT CURRENCY";
+"TM001";2025-01-15;"EUR";100,50;"Test Merchant";"";"";"";"";"";"RO001";2025-01-15;"Payment";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-no-counterparty.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0].counterpartyAccountId).toBeNull();
+    });
+
+    it("should extract counterparty account from Lithuanian format with SĄSKAITA column", async () => {
+      const csvContent = `"SĄSKAITOS  (LT123456789012345678) IŠRAŠAS (UŽ LAIKOTARPĮ: 2025-01-01-2025-01-31)";
+"DOK NR.";"DATA";"VALIUTA";"SUMA";"MOKĖTOJO ARBA GAVĖJO PAVADINIMAS";"MOKĖTOJO ARBA GAVĖJO IDENTIFIKACINIS KODAS";"SĄSKAITA";"KREDITO ĮSTAIGOS PAVADINIMAS";"KREDITO ĮSTAIGOS SWIFT KODAS";"MOKĖJIMO PASKIRTIS";"TRANSAKCIJOS KODAS";"DOKUMENTO DATA";"TRANSAKCIJOS TIPAS";"NUORODA";"DEBETAS/KREDITAS";"SUMA SĄSKAITOS VALIUTA";"SĄSKAITOS NR";"SĄSKAITOS VALIUTA";
+"TM001";2025-01-15;"EUR";100,50;"Test Merchant";"";"LT987654321098765432";"Test Bank";"TESTLT2X";"Payment details";"RO001";2025-01-15;"Payment";"";"C";100,50;"LT123456789012345678";"EUR";
+`;
+
+      const filePath = join(testDir, "test-lithuanian-counterparty.csv");
+      writeFileSync(filePath, csvContent);
+
+      const result = await parser.parse(filePath);
+
+      expect(result.transactions).toHaveLength(1);
+      expect(result.transactions[0]).toMatchObject({
+        externalId: "RO001",
+        amount: 100.5,
+        counterpartyAccountId: "LT987654321098765432",
+        accountNumber: "LT123456789012345678",
+      });
+    });
   });
 });

@@ -144,11 +144,22 @@ export async function importCSV(
           const current = Number.parseFloat(account.currentBalance);
           const newBalance = current + amount;
 
-          // 2. Create transaction with calculated balance
+          // 2. Validate counterparty account exists (for FK constraint)
+          let validatedCounterpartyId: string | null = null;
+          if (t.counterpartyAccountId) {
+            const counterpartyExists = tx
+              .select({ id: accounts.id })
+              .from(accounts)
+              .where(eq(accounts.id, t.counterpartyAccountId))
+              .get();
+            validatedCounterpartyId = counterpartyExists ? t.counterpartyAccountId : null;
+          }
+
+          // 3. Create transaction with calculated balance
           const mappedTransaction = {
             id: crypto.randomUUID(),
             accountId: targetAccountId,
-            counterpartyAccountId: null,
+            counterpartyAccountId: validatedCounterpartyId,
             externalId: t.externalId,
             date: normalizeDateToISO(t.date),
             // Amount stored as string for decimal precision (avoid floating-point errors)
@@ -165,10 +176,10 @@ export async function importCSV(
             updatedAt: new Date().toISOString(),
           };
 
-          // 3. Insert transaction
+          // 4. Insert transaction
           tx.insert(transactionsTable).values(mappedTransaction).run();
 
-          // 4. Update account balance
+          // 5. Update account balance
           tx.update(accounts)
             .set({
               currentBalance: newBalance.toString(),
