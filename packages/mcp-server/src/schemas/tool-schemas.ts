@@ -38,8 +38,8 @@ export const getAccountsOutputSchema = {
 // Transaction schema for output validation
 const transactionSchema = z.object({
   id: z.string(),
-  accountId: z.string(),
-  counterpartyAccountId: z.string().nullable(),
+  accountId: z.string().uuid(),
+  counterpartyAccountId: z.string().uuid().nullable(),
   date: z.string().describe("ISO 8601 date string"),
   amount: z.string(),
   currency: z.string(),
@@ -48,7 +48,7 @@ const transactionSchema = z.object({
   merchant: z.string().nullable(),
   description: z.string(),
   category: z.string().nullable(),
-  type: z.string(),
+  type: z.enum(["debit", "credit"]),
   balance: z.string().nullable(),
   externalId: z.string().nullable(),
   source: z.string(),

@@ -49,6 +49,7 @@ export function registerSearchTransactionsTool(server: McpServer) {
             },
           ],
           structuredContent: {
+            error: errorMessage,
             transactions: [],
             total: 0,
           },

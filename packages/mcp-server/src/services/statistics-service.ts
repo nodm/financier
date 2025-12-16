@@ -10,6 +10,14 @@ export class StatisticsService {
     groupBy?: "category" | "merchant" | "month" | "type";
   }) {
     const db = getDatabaseClient();
+
+    // Validate date range
+    if (input.dateFrom > input.dateTo) {
+      throw new DatabaseError(
+        "Invalid date range: dateFrom must be less than or equal to dateTo"
+      );
+    }
+
     const conditions: Array<SQL> = [
       gte(transactions.date, input.dateFrom),
       lte(transactions.date, input.dateTo),
@@ -71,19 +79,21 @@ export class StatisticsService {
           .groupBy(groupColumn);
 
         // Calculate percentages and netChange in TypeScript
-        groupedData = rows.map((row) => {
-          const income = Number.parseFloat(row.totalIncome ?? "0");
-          const expenses = Number.parseFloat(row.totalExpenses ?? "0");
-          return {
-            key: String(row.key ?? "Unknown"),
-            totalIncome: income,
-            totalExpenses: expenses,
-            netChange: income - expenses,
-            transactionCount: row.transactionCount,
-            percentage:
-              totalExpenses > 0 ? (expenses / totalExpenses) * 100 : 0,
-          };
-        });
+        groupedData = rows
+          .filter((row) => row.key !== null)
+          .map((row) => {
+            const income = Number.parseFloat(row.totalIncome ?? "0");
+            const expenses = Number.parseFloat(row.totalExpenses ?? "0");
+            return {
+              key: String(row.key),
+              totalIncome: income,
+              totalExpenses: expenses,
+              netChange: income - expenses,
+              transactionCount: row.transactionCount,
+              percentage:
+                totalExpenses > 0 ? (expenses / totalExpenses) * 100 : 0,
+            };
+          });
       }
 
       return { summary, groupedData };

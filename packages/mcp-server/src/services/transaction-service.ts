@@ -34,6 +34,24 @@ export class TransactionService {
     const conditions: Array<SQL> = [];
 
     try {
+      // Validate date range
+      if (input.dateFrom && input.dateTo && input.dateFrom > input.dateTo) {
+        throw new DatabaseError(
+          "Invalid date range: dateFrom must be less than or equal to dateTo"
+        );
+      }
+
+      // Validate amount range
+      if (
+        typeof input.minAmount === "number" &&
+        typeof input.maxAmount === "number" &&
+        input.minAmount > input.maxAmount
+      ) {
+        throw new DatabaseError(
+          "Invalid amount range: minAmount must be less than or equal to maxAmount"
+        );
+      }
+
       // Date range filters
       if (input.dateFrom) {
         conditions.push(gte(transactions.date, input.dateFrom));
