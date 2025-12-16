@@ -104,18 +104,16 @@ export class StatisticsService {
     }
   }
 
-  private getGroupColumn(
-    groupBy: "category" | "merchant" | "month" | "type"
-  ): SQL | typeof transactions.category | typeof transactions.merchant | typeof transactions.type {
+  private getGroupColumn(groupBy: "category" | "merchant" | "month" | "type"): SQL {
     switch (groupBy) {
       case "month":
         return sql`strftime('%Y-%m', ${transactions.date})`;
       case "category":
-        return transactions.category;
+        return sql`${transactions.category}`;
       case "merchant":
-        return transactions.merchant;
+        return sql`${transactions.merchant}`;
       case "type":
-        return transactions.type;
+        return sql`${transactions.type}`;
     }
   }
 }

@@ -47,14 +47,6 @@ export function registerGetStatisticsTool(server: McpServer) {
               }),
             },
           ],
-          structuredContent: {
-            summary: {
-              totalIncome: 0,
-              totalExpenses: 0,
-              netChange: 0,
-              transactionCount: 0,
-            },
-          },
           isError: true,
         };
       }

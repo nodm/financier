@@ -144,6 +144,9 @@ export class TransactionService {
         hasMore,
       };
     } catch (error) {
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
       throw new DatabaseError(
         `Failed to query transactions: ${error instanceof Error ? error.message : String(error)}`
       );
