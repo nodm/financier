@@ -44,6 +44,11 @@ export function registerQueryTransactionsTool(server: McpServer) {
               }),
             },
           ],
+          structuredContent: {
+            transactions: [],
+            total: 0,
+            hasMore: false,
+          },
           isError: true,
         };
       }

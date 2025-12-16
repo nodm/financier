@@ -104,7 +104,7 @@ export class StatisticsService {
     }
   }
 
-  private getGroupColumn(groupBy: "category" | "merchant" | "month" | "type"): SQL {
+  private getGroupColumn(groupBy: "category" | "merchant" | "month" | "type") {
     switch (groupBy) {
       case "month":
         return sql`strftime('%Y-%m', ${transactions.date})`;
