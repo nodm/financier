@@ -22,6 +22,9 @@
     "!**/*.tsbuildinfo"
   ],
   "dependencies": {
+    "@nodm/financier-config": "*",
+    "@nodm/financier-db": "*",
+    "@nodm/financier-types": "*",
     "commander": "^14.0.2",
     "papaparse": "^5.5.3",
     "tslib": "^2.3.0"

@@ -1,4 +1,4 @@
-import { transactions, getDatabaseClient } from "@nodm/financier-db";
+import { getDatabaseClient, transactions } from "@nodm/financier-db";
 import {
   and,
   asc,
@@ -9,8 +9,8 @@ import {
   like,
   lte,
   or,
-  sql,
   type SQL,
+  sql,
 } from "drizzle-orm";
 import { DatabaseError } from "../errors/index.js";
 
@@ -103,7 +103,7 @@ export class TransactionService {
       const where = conditions.length ? and(...conditions) : undefined;
 
       // Determine sort order
-      let orderByClause;
+      let orderByClause: ReturnType<typeof asc> | ReturnType<typeof desc> | SQL;
       if (input.sortBy === "amount") {
         // For amount sorting, use CAST to ensure numeric sort
         orderByClause =
@@ -128,9 +128,7 @@ export class TransactionService {
         .offset(input.offset);
 
       const hasMore = results.length > input.limit;
-      const transactionList = hasMore
-        ? results.slice(0, input.limit)
-        : results;
+      const transactionList = hasMore ? results.slice(0, input.limit) : results;
 
       // Get total count
       const [{ total }] = await db

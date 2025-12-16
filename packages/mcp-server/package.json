@@ -5,12 +5,14 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-    "nx": {
+  "nx": {
     "includedScripts": [],
     "targets": {
       "serve": {
         "command": "npx -y @modelcontextprotocol/inspector node ./dist/index.js",
-        "dependsOn": ["build"],
+        "dependsOn": [
+          "build"
+        ],
         "continuous": true
       }
     }
@@ -33,9 +35,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.24.3",
-    "@nodm/financier-db": "workspace:*",
-    "@nodm/financier-types": "workspace:*",
+    "@nodm/financier-db": "*",
+    "@nodm/financier-types": "*",
     "tslib": "^2.3.0",
-    "zod": "^3.24.1"
+    "zod": "^4.1.13"
   }
 }
