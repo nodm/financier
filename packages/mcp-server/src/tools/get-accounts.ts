@@ -30,7 +30,8 @@ export function registerGetAccountsTool(server: McpServer) {
         };
       } catch (error) {
         console.error("[ERROR] get_accounts failed:", error);
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {

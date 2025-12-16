@@ -39,7 +39,10 @@ export const getAccountsOutputSchema = {
 const transactionSchema = z.object({
   id: z.string().uuid().describe("Transaction UUID"),
   accountId: z.string().describe("Account IBAN"),
-  counterpartyAccountId: z.string().nullable().describe("Counterparty account IBAN"),
+  counterpartyAccountId: z
+    .string()
+    .nullable()
+    .describe("Counterparty account IBAN"),
   date: z.string().describe("ISO 8601 date string"),
   amount: z.string(),
   currency: z.string(),

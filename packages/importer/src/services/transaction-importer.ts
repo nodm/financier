@@ -152,7 +152,9 @@ export async function importCSV(
               .from(accounts)
               .where(eq(accounts.id, t.counterpartyAccountId))
               .get();
-            validatedCounterpartyId = counterpartyExists ? t.counterpartyAccountId : null;
+            validatedCounterpartyId = counterpartyExists
+              ? t.counterpartyAccountId
+              : null;
           }
 
           // 3. Create transaction with calculated balance

@@ -83,9 +83,7 @@
       "indexes": {
         "accounts_bankCode_idx": {
           "name": "accounts_bankCode_idx",
-          "columns": [
-            "bankCode"
-          ],
+          "columns": ["bankCode"],
           "isUnique": false
         }
       },
@@ -229,54 +227,37 @@
       "indexes": {
         "transactions_accountId_idx": {
           "name": "transactions_accountId_idx",
-          "columns": [
-            "accountId"
-          ],
+          "columns": ["accountId"],
           "isUnique": false
         },
         "transactions_counterpartyAccountId_idx": {
           "name": "transactions_counterpartyAccountId_idx",
-          "columns": [
-            "counterpartyAccountId"
-          ],
+          "columns": ["counterpartyAccountId"],
           "isUnique": false
         },
         "transactions_accountId_date_idx": {
           "name": "transactions_accountId_date_idx",
-          "columns": [
-            "accountId",
-            "date"
-          ],
+          "columns": ["accountId", "date"],
           "isUnique": false
         },
         "transactions_date_idx": {
           "name": "transactions_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         },
         "transactions_merchant_idx": {
           "name": "transactions_merchant_idx",
-          "columns": [
-            "merchant"
-          ],
+          "columns": ["merchant"],
           "isUnique": false
         },
         "transactions_category_idx": {
           "name": "transactions_category_idx",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "transactions_accountId_date_externalId_key": {
           "name": "transactions_accountId_date_externalId_key",
-          "columns": [
-            "accountId",
-            "date",
-            "externalId"
-          ],
+          "columns": ["accountId", "date", "externalId"],
           "isUnique": true
         }
       },
@@ -285,12 +266,8 @@
           "name": "transactions_accountId_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "accountId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["accountId"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -298,12 +275,8 @@
           "name": "transactions_counterpartyAccountId_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "counterpartyAccountId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["counterpartyAccountId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }

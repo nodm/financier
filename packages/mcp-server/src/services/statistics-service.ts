@@ -1,5 +1,5 @@
-import { transactions, getDatabaseClient } from "@nodm/financier-db";
-import { and, eq, gte, lte, sql, type SQL } from "drizzle-orm";
+import { getDatabaseClient, transactions } from "@nodm/financier-db";
+import { and, eq, gte, lte, type SQL, sql } from "drizzle-orm";
 import { DatabaseError } from "../errors/index.js";
 
 export class StatisticsService {
@@ -41,9 +41,7 @@ export class StatisticsService {
         .where(where);
 
       const totalIncome = Number.parseFloat(summaryRow?.totalIncome ?? "0");
-      const totalExpenses = Number.parseFloat(
-        summaryRow?.totalExpenses ?? "0"
-      );
+      const totalExpenses = Number.parseFloat(summaryRow?.totalExpenses ?? "0");
 
       const summary = {
         totalIncome,

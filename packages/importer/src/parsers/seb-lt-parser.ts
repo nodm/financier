@@ -31,7 +31,7 @@ const HEADER_MAPPINGS = {
   "MOKĖTOJO ARBA GAVĖJO PAVADINIMAS": "merchant",
   "TRANSAKCIJOS TIPAS": "category",
   "DEBETAS/KREDITAS": "typeIndicator",
-  "SĄSKAITA": "counterpartyAccountId",
+  SĄSKAITA: "counterpartyAccountId",
   "SĄSKAITOS NR": "accountNumber",
   "MOKĖJIMO PASKIRTIS": "description",
   // English -> normalized key
@@ -293,7 +293,8 @@ export class SebLtParser extends BaseParser {
       const normalized: Record<string, string> = {};
 
       for (const [header, idx] of columnMap.entries()) {
-        const mappedKey = HEADER_MAPPINGS[header as keyof typeof HEADER_MAPPINGS];
+        const mappedKey =
+          HEADER_MAPPINGS[header as keyof typeof HEADER_MAPPINGS];
         if (mappedKey) {
           normalized[mappedKey] = row[idx] || "";
         }
@@ -343,9 +344,7 @@ export class SebLtParser extends BaseParser {
 
     // Extract counterparty account ID
     const counterpartyAccountId =
-      row.counterpartyAccountId ||
-      row.SĄSKAITA ||
-      null;
+      row.counterpartyAccountId || row.SĄSKAITA || null;
 
     return {
       externalId,

@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import {
   afterAll,
   afterEach,
@@ -13,9 +16,6 @@ import {
   resetDatabaseClient,
 } from "@nodm/financier-db";
 import { sql } from "drizzle-orm";
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
 import { AccountService } from "../../src/services/account-service.js";
 
 async function setupTestDatabase() {

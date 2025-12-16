@@ -1,10 +1,5 @@
 import { sql } from "drizzle-orm";
-import {
-  index,
-  sqliteTable,
-  text,
-  unique,
-} from "drizzle-orm/sqlite-core";
+import { index, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import { accounts } from "./accounts.js";
 
 export const transactions = sqliteTable(
@@ -30,12 +25,8 @@ export const transactions = sqliteTable(
     balance: text("balance"),
     externalId: text("externalId"),
     source: text("source").notNull(),
-    importedAt: text("importedAt")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-    createdAt: text("createdAt")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    importedAt: text("importedAt").notNull().default(sql`CURRENT_TIMESTAMP`),
+    createdAt: text("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updatedAt")
       .notNull()
       .$onUpdate(() => new Date().toISOString()),
