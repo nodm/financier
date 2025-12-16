@@ -1,2 +1,4 @@
 export * from "./get-accounts.js";
-// Phase 7: Export other tools here
+export * from "./query-transactions.js";
+export * from "./search-transactions.js";
+export * from "./get-statistics.js";
