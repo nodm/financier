@@ -73,12 +73,13 @@ export class TransactionService {
       // Full-text search (description OR merchant)
       if (input.search) {
         const pattern = `%${input.search}%`;
-        conditions.push(
-          or(
-            like(transactions.description, pattern),
-            like(transactions.merchant, pattern)
-          )!
+        const searchCondition = or(
+          like(transactions.description, pattern),
+          like(transactions.merchant, pattern)
         );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
       }
 
       const where = conditions.length ? and(...conditions) : undefined;
