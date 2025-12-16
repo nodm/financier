@@ -37,9 +37,9 @@ export const getAccountsOutputSchema = {
 
 // Transaction schema for output validation
 const transactionSchema = z.object({
-  id: z.string(),
-  accountId: z.string().uuid(),
-  counterpartyAccountId: z.string().uuid().nullable(),
+  id: z.string().uuid().describe("Transaction UUID"),
+  accountId: z.string().describe("Account IBAN"),
+  counterpartyAccountId: z.string().nullable().describe("Counterparty account IBAN"),
   date: z.string().describe("ISO 8601 date string"),
   amount: z.string(),
   currency: z.string(),
@@ -61,7 +61,7 @@ const transactionSchema = z.object({
 export const queryTransactionsInputSchema = {
   dateFrom: z.string().optional().describe("ISO 8601 date string (YYYY-MM-DD)"),
   dateTo: z.string().optional().describe("ISO 8601 date string (YYYY-MM-DD)"),
-  accountId: z.string().uuid().optional(),
+  accountId: z.string().optional().describe("IBAN of the account"),
   category: z.string().optional(),
   type: z.enum(["debit", "credit"]).optional(),
   minAmount: z.number().optional(),
@@ -83,7 +83,7 @@ export const queryTransactionsOutputSchema = {
 // search_transactions schemas
 export const searchTransactionsInputSchema = {
   query: z.string().min(1).describe("Search query for description/merchant"),
-  accountId: z.string().uuid().optional(),
+  accountId: z.string().optional().describe("IBAN of the account"),
   limit: z.number().int().min(1).max(500).default(50),
 };
 
@@ -96,7 +96,7 @@ export const searchTransactionsOutputSchema = {
 export const getStatisticsInputSchema = {
   dateFrom: z.string().describe("ISO 8601 date string (YYYY-MM-DD)"),
   dateTo: z.string().describe("ISO 8601 date string (YYYY-MM-DD)"),
-  accountId: z.string().uuid().optional(),
+  accountId: z.string().optional().describe("IBAN of the account"),
   groupBy: z
     .enum(["category", "merchant", "month", "type"])
     .optional()
