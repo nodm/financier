@@ -73,8 +73,12 @@
     }
   ],
   "release": {
+    "projects": ["packages/mcp-server"],
     "version": {
       "preVersionCommand": "npx nx run-many -t build"
+    },
+    "publish": {
+      "command": "node packages/mcp-server/scripts/publish.js"
     }
   }
 }

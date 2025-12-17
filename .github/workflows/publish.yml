@@ -1,0 +1,91 @@
+name: Publish MCP Server
+
+on:
+  push:
+    tags:
+      - "mcp-server-v*"
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (e.g., 1.0.0)"
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npx nx run-many -t test --projects=@nodm/financier-types,@nodm/financier-db,@nodm/financier-mcp-server
+
+      - name: Extract version from tag
+        id: version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#mcp-server-v}
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Use workflow input version
+        id: version
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.version != ''
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Update package version
+        if: steps.version.outputs.version != ''
+        run: |
+          cd packages/mcp-server
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+      - name: Build packages
+        run: |
+          npx nx run-many -t build --projects=@nodm/financier-types,@nodm/financier-db,@nodm/financier-mcp-server
+
+      - name: Bundle MCP server
+        run: |
+          cd packages/mcp-server
+          npm run bundle
+
+      - name: Publish to npm
+        run: |
+          cd packages/mcp-server
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            MCP Server Release ${{ steps.version.outputs.version }}
+            
+            Published to npm: https://www.npmjs.com/package/@nodm/financier-mcp-server
+          draft: false
+          prerelease: false
+

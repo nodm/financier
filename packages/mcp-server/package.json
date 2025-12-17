@@ -1,10 +1,51 @@
 {
   "name": "@nodm/financier-mcp-server",
   "version": "0.0.1",
+  "description": "MCP server for Financier - a personal finance management system with SQLite database",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "financier-mcp-server": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo",
+    "README.md"
+  ],
+  "scripts": {
+    "bundle": "node scripts/bundle.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "financier",
+    "finance",
+    "banking",
+    "sqlite",
+    "claude-desktop"
+  ],
+  "author": "nodm",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nodm/financier.git",
+    "directory": "packages/mcp-server"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "better-sqlite3": "^12.4.6",
+    "drizzle-orm": "^0.44.7",
+    "tslib": "^2.3.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.12"
+  },
   "nx": {
     "includedScripts": [],
     "targets": {
@@ -25,19 +66,5 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
-  },
-  "files": [
-    "dist",
-    "!**/*.tsbuildinfo"
-  ],
-  "bin": {
-    "financier-mcp-server": "./dist/index.js"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "@nodm/financier-db": "*",
-    "@nodm/financier-types": "*",
-    "tslib": "^2.3.0",
-    "zod": "^4.1.13"
   }
 }
